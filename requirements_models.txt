@@ -1,0 +1,2 @@
+# Legacy compatibility file. Main runtime dependencies live in requirements.txt.
+-r requirements.txt
