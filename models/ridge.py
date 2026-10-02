@@ -27,6 +27,6 @@ def train(data_dir='.', out_dir='artifacts'):
         'rmse': float(np.sqrt(mean_squared_error(y, preds))),
     }
     pipe.fit(X, y)
-    artifact = {'model': pipe, 'feature_columns': cols, 'target': 'future_tire_wear_pct', 'metrics': metrics, 'metadata': {'model_name': 'ridge'}}
+    artifact = {'model': pipe, 'feature_columns': cols, 'target': 'next_lap_wear_increment', 'metrics': metrics, 'metadata': {'model_name': 'ridge'}}
     save_model_artifact('ridge', artifact, PROJECT_ROOT / out_dir / 'models')
     return metrics

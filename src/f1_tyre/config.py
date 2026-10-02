@@ -14,7 +14,8 @@ FEATURE_IMPORTANCE_DIR = ARTIFACTS_DIR / "feature_importance"
 
 DEFAULT_MODEL_NAMES = ["ridge", "random_forest", "xgboost", "neural_network"]
 COMMON_GROUP_COLS = ["race_id", "driver_id"]
-TARGET_NAME = "future_tire_wear_pct"
+TARGET_NAME = "next_lap_wear_increment"
+LEGACY_TARGET_NAME = "future_tire_wear_pct"
 MAIN_TARGET = "tire_wear_pct"
 
 FORBIDDEN_LEAKAGE_PATTERNS = (

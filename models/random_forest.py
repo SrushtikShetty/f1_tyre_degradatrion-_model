@@ -37,7 +37,7 @@ def train(data_dir='.', out_dir='artifacts'):
     artifact = {
         'model': pipe,
         'feature_columns': cols,
-        'target': 'future_tire_wear_pct',
+        'target': 'next_lap_wear_increment',
         'metrics': metrics,
         'metadata': {'model_name': 'random_forest'},
     }

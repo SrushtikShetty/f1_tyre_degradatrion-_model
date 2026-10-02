@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from .config import COMMON_GROUP_COLS, MAIN_TARGET, TARGET_NAME
+from .config import COMMON_GROUP_COLS, LEGACY_TARGET_NAME, MAIN_TARGET, TARGET_NAME
 
 
 def require_columns(df: pd.DataFrame, columns: list[str]) -> None:
@@ -32,16 +32,22 @@ def build_target_frame(df: pd.DataFrame) -> pd.DataFrame:
     out = df.copy().sort_values(COMMON_GROUP_COLS + ["lap"]).reset_index(drop=True)
     grouped = out.groupby(COMMON_GROUP_COLS, sort=False)
     out["_next_lap"] = grouped["lap"].shift(-1)
+    out["_next_tire_age"] = grouped["tire_age_laps"].shift(-1)
     out["_next_compound"] = grouped["tire_compound"].shift(-1)
-    out[TARGET_NAME] = grouped[MAIN_TARGET].shift(-1)
+    out["_next_wear"] = grouped[MAIN_TARGET].shift(-1)
+    out[TARGET_NAME] = out["_next_wear"] - out[MAIN_TARGET]
+    out[LEGACY_TARGET_NAME] = out["_next_wear"]
 
     valid = (
         out["_next_lap"].eq(out["lap"] + 1)
+        & out["_next_tire_age"].eq(out["tire_age_laps"] + 1)
         & out["_next_compound"].astype("string").eq(out["tire_compound"].astype("string"))
-        & out[TARGET_NAME].notna()
+        & out["_next_wear"].notna()
     )
 
-    prepared = out.loc[valid].drop(columns=["_next_lap", "_next_compound"]).copy()
+    prepared = out.loc[valid].drop(
+        columns=["_next_lap", "_next_tire_age", "_next_compound", "_next_wear"]
+    ).copy()
     prepared = prepared.reset_index(drop=True)
     return prepared
 
