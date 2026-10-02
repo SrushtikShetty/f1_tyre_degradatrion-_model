@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from pathlib import Path
+
+import joblib
 import numpy as np
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import GroupKFold, cross_val_predict
 from sklearn.pipeline import Pipeline
@@ -15,35 +18,15 @@ from .common import RANDOM_STATE, build_preprocessor, prepare_dataset
 def train(data_dir='.', out_dir='artifacts'):
     X, y, groups, _, cols = prepare_dataset(data_dir)
     cv = GroupKFold(n_splits=5)
-    pipe = Pipeline([
-        ('prep', build_preprocessor(X)),
-        ('model', RandomForestRegressor(
-            n_estimators=300,
-            max_depth=None,
-            min_samples_leaf=2,
-            max_features='sqrt',
-            n_jobs=-1,
-            random_state=RANDOM_STATE,
-        )),
-    ])
+    pipe = Pipeline([('prep', build_preprocessor(X)), ('model', Ridge(alpha=10.0))])
     preds = cross_val_predict(pipe, X, y, cv=cv, groups=groups, n_jobs=1)
     metrics = {
-        'model': 'RandomForest',
+        'model': 'Ridge',
         'r2': float(r2_score(y, preds)),
         'mae': float(mean_absolute_error(y, preds)),
         'rmse': float(np.sqrt(mean_squared_error(y, preds))),
     }
     pipe.fit(X, y)
-    artifact = {
-        'model': pipe,
-        'feature_columns': cols,
-        'target': 'future_tire_wear_pct',
-        'metrics': metrics,
-        'metadata': {'model_name': 'random_forest'},
-    }
-    save_model_artifact('random_forest', artifact, PROJECT_ROOT / out_dir / 'models')
+    artifact = {'model': pipe, 'feature_columns': cols, 'target': 'future_tire_wear_pct', 'metrics': metrics, 'metadata': {'model_name': 'ridge'}}
+    save_model_artifact('ridge', artifact, PROJECT_ROOT / out_dir / 'models')
     return metrics
-
-
-if __name__ == '__main__':
-    print(train())

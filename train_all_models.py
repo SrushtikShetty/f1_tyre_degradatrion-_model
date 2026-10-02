@@ -1,5 +1,7 @@
-from models.compare_models import run
+from __future__ import annotations
 
-if __name__=='__main__':
-    print('Training Ridge, Random Forest, XGBoost and neural-network models...')
-    run()
+from training.train_all import main
+
+
+if __name__ == "__main__":
+    main()
