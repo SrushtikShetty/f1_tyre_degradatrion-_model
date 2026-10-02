@@ -12,3 +12,16 @@ artifacts/predictions/*
 !artifacts/feature_importance/
 artifacts/feature_importance/*
 !artifacts/feature_importance/.gitkeep
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+.venv/
+venv/
+env/
+.DS_Store
+*.log
