@@ -12,6 +12,12 @@ artifacts/predictions/*
 !artifacts/feature_importance/
 artifacts/feature_importance/*
 !artifacts/feature_importance/.gitkeep
+
+# Keep trained model artifacts in the project.
+*.joblib
+!artifacts/models/*.joblib
+!f1_tyre_wear_model.joblib
+
 __pycache__/
 *.py[cod]
 *.pyo
