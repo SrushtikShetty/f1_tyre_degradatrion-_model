@@ -77,6 +77,101 @@ python inference/predict.py --model xgboost --input test.csv --output artifacts/
 python inference/interactive_predict.py --model xgboost
 ```
 
+## Web Application
+
+The repository now includes a lightweight web UI that connects to the existing saved model artifacts without retraining. The frontend is served by a FastAPI backend and uses the project’s real inference path.
+
+### Installation
+
+```bash
+python -m venv .venv
+. .venv/bin/activate  # or .venv\Scripts\activate on Windows
+pip install -r requirements-dev.txt
+pip install fastapi uvicorn
+```
+
+### Running the backend
+
+```bash
+python backend/app.py
+```
+
+Then open:
+
+- http://127.0.0.1:8000/
+- http://localhost:8000/
+
+### Available models
+
+- ridge
+- random_forest
+- xgboost
+- neural_network
+
+The web application uses the existing trained model artifacts and does not retrain models automatically.
+
+### API endpoints
+
+- GET /api/health
+- GET /api/models
+- GET /api/model-metrics
+- GET /api/feature-importance
+- POST /api/predict
+- POST /api/explain
+
+### Running predictions
+
+Use the dashboard form in the browser or call the API directly with JSON such as:
+
+```json
+{
+  "model": "xgboost",
+  "inputs": {
+    "season": 2024,
+    "race_round": 12,
+    "circuit_country": "Monaco",
+    "circuit_length_km": 3.337,
+    "circuit_turns": 19,
+    "driver_nationality": "FIN",
+    "driver_skill_rating": 92,
+    "driver_aggression_rating": 78,
+    "driver_consistency_rating": 84,
+    "team_car_speed_rating": 88,
+    "team_car_downforce_rating": 86,
+    "team_car_reliability_rating": 90,
+    "team_pit_crew_rating": 82,
+    "race_total_laps": 58,
+    "grid_position": 3,
+    "lap": 24,
+    "position": 2,
+    "lap_time_sec": 88.7,
+    "s1_time_sec": 28.2,
+    "s2_time_sec": 29.6,
+    "s3_time_sec": 31.0,
+    "tire_compound": "MEDIUM",
+    "tire_age_laps": 14,
+    "fuel_load_kg": 76.0,
+    "ers_deploy_pct": 48,
+    "ers_harvest_pct": 24,
+    "gap_to_leader_sec": 1.2,
+    "gap_ahead_sec": 0.5,
+    "gap_behind_sec": 0.8,
+    "track_status": "Green",
+    "weather_current": "Clear",
+    "race_air_temp_c": 29.1,
+    "race_track_temp_c": 38.2,
+    "race_humidity_pct": 52
+  }
+}
+```
+
+### Troubleshooting
+
+- If a saved artifact is missing, the backend raises a clear error instead of retraining.
+- If a required model feature is not present, the UI returns a readable validation message.
+- If a model name is invalid, the API returns a 422 error with the supported list.
+- If the frontend cannot reach the API, confirm the backend is running on port 8000.
+
 ## Explicit Training
 
 ```bash

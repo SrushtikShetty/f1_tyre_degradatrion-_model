@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>F1 Tyre Degradation AI</title>
+    <meta name="description" content="Lap-by-lap tyre degradation prediction and driver aggression analysis." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/static/css/style.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <nav class="nav container" aria-label="Main navigation">
+          <div class="brand" aria-label="F1 Tyre Degradation AI logo and title">
+            <span class="brand-mark">F1</span>
+            <div>
+              <strong>F1 TYRE DEGRADATION AI</strong>
+              <small>Lap-by-Lap Tyre Degradation Prediction</small>
+            </div>
+          </div>
+          <div class="nav-links">
+            <a href="#overview">Dashboard</a>
+            <a href="#prediction">Prediction</a>
+            <a href="#driver-analysis">Driver Analysis</a>
+            <a href="#model-performance">Model Performance</a>
+            <a href="#explainability">Explainability</a>
+            <a href="#about">About</a>
+          </div>
+        </nav>
+      </header>
+
+      <main>
+        <section id="overview" class="hero container">
+          <div class="section-copy">
+            <p class="eyebrow">Race Engineering • Live Prediction</p>
+            <h1>Lap-by-Lap Tyre Degradation Prediction</h1>
+            <p class="lede">
+              The system predicts next-lap tyre-wear increment using causal telemetry and machine learning,
+              combining pace, tyre age, fuel, race context, and driver behaviour without using future-race information.
+            </p>
+            <div class="cta-row">
+              <button class="primary-btn" type="button" data-scroll="#prediction">Run Prediction</button>
+              <button class="secondary-btn" type="button" data-scroll="#model-performance">View Model Performance</button>
+            </div>
+          </div>
+          <div class="hero-panel">
+            <div class="mini-kpi">
+              <span>Selected model</span>
+              <strong id="heroModelLabel">XGBoost</strong>
+            </div>
+            <div class="mini-kpi">
+              <span>Predicted next-lap delta</span>
+              <strong id="heroPredictionValue">Awaiting input</strong>
+            </div>
+            <div class="mini-kpi">
+              <span>Driver aggression</span>
+              <strong id="heroAggressionValue">--</strong>
+            </div>
+          </div>
+        </section>
+
+        <section id="prediction" class="container main-grid">
+          <div class="panel panel-form">
+            <div class="panel-header">
+              <div>
+                <p class="label">Live prediction</p>
+                <h2>Tyre degradation input</h2>
+              </div>
+            </div>
+
+            <form id="predictionForm" novalidate>
+              <div class="field-group">
+                <h3>Driver / Race Context</h3>
+                <div class="form-grid">
+                  <label><span>Season</span><input name="season" type="number" value="2024" /></label>
+                  <label><span>Race round</span><input name="race_round" type="number" value="12" /></label>
+                  <label><span>Circuit</span><input name="circuit" type="text" value="Monaco" /></label>
+                  <label><span>Circuit country</span><input name="circuit_country" type="text" value="Monaco" /></label>
+                  <label><span>Driver</span><input name="driver" type="text" value="Leclerc" /></label>
+                  <label><span>Driver nationality</span><input name="driver_nationality" type="text" value="MON" /></label>
+                  <label><span>Team</span><input name="team" type="text" value="Ferrari" /></label>
+                  <label><span>Grid position</span><input name="grid_position" type="number" value="3" /></label>
+                  <label><span>Current race lap</span><input name="lap" type="number" value="24" /></label>
+                  <label><span>Total race laps</span><input name="race_total_laps" type="number" value="58" /></label>
+                  <label><span>Current track position</span><input name="position" type="number" value="2" /></label>
+                </div>
+              </div>
+
+              <div class="field-group">
+                <h3>Tyre</h3>
+                <div class="form-grid">
+                  <label><span>Tyre compound</span>
+                    <select name="tire_compound">
+                      <option value="SOFT">Soft</option>
+                      <option value="MEDIUM" selected>Medium</option>
+                      <option value="HARD">Hard</option>
+                      <option value="INTERMEDIATE">Intermediate</option>
+                      <option value="WET">Wet</option>
+                    </select>
+                  </label>
+                  <label><span>Tyre age (laps)</span><input name="tire_age_laps" type="number" value="14" /></label>
+                  <label><span>Current tyre wear (%)</span><input name="tire_wear_pct" type="number" value="32.5" step="0.1" /></label>
+                </div>
+              </div>
+
+              <div class="field-group">
+                <h3>Telemetry</h3>
+                <div class="form-grid">
+                  <label><span>Lap time (s)</span><input name="lap_time_sec" type="number" value="88.7" step="0.1" /></label>
+                  <label><span>Sector 1 (s)</span><input name="s1_time_sec" type="number" value="28.2" step="0.1" /></label>
+                  <label><span>Sector 2 (s)</span><input name="s2_time_sec" type="number" value="29.6" step="0.1" /></label>
+                  <label><span>Sector 3 (s)</span><input name="s3_time_sec" type="number" value="31.0" step="0.1" /></label>
+                  <label><span>Gap to leader (s)</span><input name="gap_to_leader_sec" type="number" value="1.2" step="0.1" /></label>
+                  <label><span>Gap ahead (s)</span><input name="gap_ahead_sec" type="number" value="0.5" step="0.1" /></label>
+                  <label><span>Gap behind (s)</span><input name="gap_behind_sec" type="number" value="0.8" step="0.1" /></label>
+                  <label><span>Fuel load (kg)</span><input name="fuel_load_kg" type="number" value="76" step="0.1" /></label>
+                  <label><span>ERS deployment (%)</span><input name="ers_deploy_pct" type="number" value="48" /></label>
+                  <label><span>ERS harvesting (%)</span><input name="ers_harvest_pct" type="number" value="24" /></label>
+                  <label><span>DRS activated</span><input name="drs_activated" type="number" value="1" step="1" /></label>
+                  <label><span>Track status</span><input name="track_status" type="text" value="Green" /></label>
+                </div>
+              </div>
+
+              <div class="field-group">
+                <h3>Weather</h3>
+                <div class="form-grid">
+                  <label><span>Air temp (C)</span><input name="race_air_temp_c" type="number" value="29.1" step="0.1" /></label>
+                  <label><span>Track temp (C)</span><input name="race_track_temp_c" type="number" value="38.2" step="0.1" /></label>
+                  <label><span>Humidity (%)</span><input name="race_humidity_pct" type="number" value="52" /></label>
+                  <label><span>Current weather</span><input name="weather_current" type="text" value="Clear" /></label>
+                </div>
+              </div>
+
+              <div class="field-group">
+                <h3>Driver / Team / Circuit Characteristics</h3>
+                <div class="form-grid">
+                  <label><span>Driver skill rating</span><input name="driver_skill_rating" type="number" value="92" /></label>
+                  <label><span>Driver aggression rating</span><input name="driver_aggression_rating" type="number" value="78" /></label>
+                  <label><span>Driver consistency rating</span><input name="driver_consistency_rating" type="number" value="84" /></label>
+                  <label><span>Car speed rating</span><input name="team_car_speed_rating" type="number" value="88" /></label>
+                  <label><span>Car downforce rating</span><input name="team_car_downforce_rating" type="number" value="86" /></label>
+                  <label><span>Car reliability rating</span><input name="team_car_reliability_rating" type="number" value="90" /></label>
+                  <label><span>Team budget tier</span><input name="team_budget_tier" type="number" value="3" /></label>
+                  <label><span>Pit crew rating</span><input name="team_pit_crew_rating" type="number" value="82" /></label>
+                  <label><span>Engine supplier</span><input name="team_engine_supplier" type="text" value="Ferrari" /></label>
+                  <label><span>Circuit length (km)</span><input name="circuit_length_km" type="number" value="3.337" step="0.001" /></label>
+                  <label><span>Number of turns</span><input name="circuit_turns" type="number" value="19" /></label>
+                  <label><span>DRS zones</span><input name="circuit_drs_zones" type="number" value="2" /></label>
+                  <label><span>Overtaking difficulty</span><input name="circuit_overtake_difficulty" type="number" value="7" /></label>
+                  <label><span>Base lap time (s)</span><input name="circuit_base_lap_time_sec" type="number" value="89.5" step="0.1" /></label>
+                  <label><span>Team ID</span><input name="team_id" type="number" value="9" /></label>
+                  <label><span>Driver ID</span><input name="driver_id" type="number" value="101" /></label>
+                  <label><span>Circuit ID</span><input name="circuit_id" type="number" value="5" /></label>
+                </div>
+              </div>
+
+              <div class="field-group model-selector-wrap">
+                <label class="selector-label" for="modelSelect">Model</label>
+                <div class="model-selector">
+                  <select id="modelSelect" aria-label="Select model">
+                    <option value="xgboost" selected>XGBoost</option>
+                    <option value="random_forest">Random Forest</option>
+                    <option value="neural_network">Neural Network</option>
+                    <option value="ridge">Ridge</option>
+                  </select>
+                  <span class="model-note">Using existing trained model</span>
+                </div>
+              </div>
+
+              <div id="formStatus" class="inline-status" aria-live="polite"></div>
+
+              <button id="submitButton" class="predict-btn" type="submit">
+                Predict Next-Lap Degradation
+              </button>
+            </form>
+          </div>
+
+          <div class="sidebar-stack">
+            <div class="panel result-panel">
+              <div class="panel-header compact">
+                <div>
+                  <p class="label">Prediction result</p>
+                  <h2>Predicted Next-Lap Degradation</h2>
+                </div>
+              </div>
+              <div class="result-value" id="predictionValue">+0.00 %</div>
+              <div class="result-meta">
+                <span>Current tyre age: <strong id="resultTyreAge">--</strong></span>
+                <span>Compound: <strong id="resultCompound">--</strong></span>
+                <span>Selected model: <strong id="resultModel">--</strong></span>
+              </div>
+              <p id="predictionInterpretation" class="result-copy">
+                Awaiting a prediction run.
+              </p>
+            </div>
+
+            <div id="driver-analysis" class="panel driver-panel">
+              <div class="panel-header compact">
+                <div>
+                  <p class="label">Driver aggression analysis</p>
+                  <h2>Driver aggression profile</h2>
+                </div>
+              </div>
+              <div class="gauge-wrap">
+                <div class="gauge-ring">
+                  <div class="gauge-inner">
+                    <strong id="aggressionGaugeValue">0</strong>
+                    <span>aggression</span>
+                  </div>
+                </div>
+              </div>
+              <div class="aggression-stats">
+                <div><span>Driver aggression</span><strong id="driverAggressionScore">--</strong></div>
+                <div><span>Consistency</span><strong id="driverConsistencyScore">--</strong></div>
+                <div><span>Skill</span><strong id="driverSkillScore">--</strong></div>
+                <div><span>Tyre age</span><strong id="driverTyreAgeStat">--</strong></div>
+              </div>
+              <p class="result-copy">
+                Driver aggression is incorporated as a causal contextual feature in the prediction pipeline.
+              </p>
+            </div>
+
+            <div class="panel telemetry-panel">
+              <div class="panel-header compact">
+                <div>
+                  <p class="label">Telemetry summary</p>
+                  <h2>Current status</h2>
+                </div>
+              </div>
+              <ul class="telemetry-list">
+                <li><span>Current lap</span><strong id="telemetryLap">--</strong></li>
+                <li><span>Tyre compound</span><strong id="telemetryCompound">--</strong></li>
+                <li><span>Tyre age</span><strong id="telemetryAge">--</strong></li>
+                <li><span>Lap time</span><strong id="telemetryLapTime">--</strong></li>
+                <li><span>Fuel load</span><strong id="telemetryFuel">--</strong></li>
+                <li><span>Track temp</span><strong id="telemetryTrackTemp">--</strong></li>
+                <li><span>Air temp</span><strong id="telemetryAirTemp">--</strong></li>
+                <li><span>Gap to leader</span><strong id="telemetryGap">--</strong></li>
+                <li><span>Position</span><strong id="telemetryPosition">--</strong></li>
+                <li><span>Driver aggression</span><strong id="telemetryAggression">--</strong></li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section id="model-performance" class="container section-block">
+          <div class="section-heading">
+            <p class="label">Model performance</p>
+            <h2>Saved model comparison</h2>
+          </div>
+          <div id="metricsCards" class="metrics-grid"></div>
+          <div class="chart-card wide-card">
+            <canvas id="modelComparisonChart" aria-label="Model comparison chart"></canvas>
+          </div>
+          <div class="table-card">
+            <table>
+              <thead>
+                <tr>
+                  <th>Model</th>
+                  <th>R²</th>
+                  <th>MAE</th>
+                  <th>RMSE</th>
+                </tr>
+              </thead>
+              <tbody id="metricsTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="container section-block charts-grid" aria-label="Prediction and degradation chart area">
+          <div class="chart-card">
+            <h3>Predicted degradation vs tyre age</h3>
+            <canvas id="degradationVsAgeChart"></canvas>
+          </div>
+          <div class="chart-card">
+            <h3>Lap time trend</h3>
+            <canvas id="lapTimeChart"></canvas>
+          </div>
+          <div class="chart-card">
+            <h3>Tyre degradation trend</h3>
+            <canvas id="degradationTrendChart"></canvas>
+          </div>
+          <div class="chart-card">
+            <h3>Driver aggression vs degradation</h3>
+            <canvas id="aggressionVsDegradationChart"></canvas>
+          </div>
+        </section>
+
+        <section id="explainability" class="container section-block">
+          <div class="section-heading">
+            <p class="label">Explainability</p>
+            <h2>Global feature importance and local prediction explanation</h2>
+          </div>
+
+          <div class="explain-grid">
+            <div class="chart-card">
+              <h3>Global feature importance</h3>
+              <canvas id="importanceChart" aria-label="Feature importance chart"></canvas>
+            </div>
+            <div class="chart-card">
+              <h3>Local prediction explanation</h3>
+              <div id="localExplanation" class="explanation-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="about" class="container section-block about-block">
+          <div class="section-heading">
+            <p class="label">About the model</p>
+            <h2>Methodology and leakage prevention</h2>
+          </div>
+          <div class="pipeline-card">
+            <div class="pipeline-step">Telemetry</div>
+            <div class="arrow">↓</div>
+            <div class="pipeline-step">Data Validation</div>
+            <div class="arrow">↓</div>
+            <div class="pipeline-step">Causal Feature Engineering</div>
+            <div class="arrow">↓</div>
+            <div class="pipeline-step">Saved ML Model</div>
+            <div class="arrow">↓</div>
+            <div class="pipeline-step">Next-Lap Degradation Prediction</div>
+            <div class="arrow">↓</div>
+            <div class="pipeline-step">Explainability</div>
+          </div>
+          <div class="about-copy">
+            <p>
+              This system predicts the next-lap tyre-wear increment using a strict, causal feature set that excludes future-state race information.
+              It incorporates lag features, rolling telemetry, race-grouped validation, and model-agnostic explainability based on saved feature importance data.
+            </p>
+            <p>
+              The project intentionally avoids future tyre wear, next-race conditions, finish position, and pit-stop outcomes. Driver aggression is included as a context variable in the causal prediction pipeline.
+            </p>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/static/js/charts.js"></script>
+    <script src="/static/js/app.js"></script>
+  </body>
+</html>

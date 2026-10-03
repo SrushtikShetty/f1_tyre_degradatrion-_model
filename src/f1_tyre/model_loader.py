@@ -5,11 +5,13 @@ from pathlib import Path
 
 import joblib
 
-from .config import ARTIFACTS_DIR, DEFAULT_MODEL_NAMES, MODEL_ARTIFACT_DIR
+from .config import ARTIFACTS_DIR, DEFAULT_MODEL_NAMES, MODEL_ARTIFACT_DIR, PROJECT_ROOT
+
+LEGACY_MODEL_PATH = PROJECT_ROOT / "f1_tyre_wear_model.joblib"
 
 
 def _candidate_dirs() -> list[Path]:
-    dirs = [MODEL_ARTIFACT_DIR, ARTIFACTS_DIR]
+    dirs = [MODEL_ARTIFACT_DIR, ARTIFACTS_DIR, PROJECT_ROOT]
     seen = set()
     ordered = []
     for path in dirs:
@@ -29,6 +31,8 @@ def list_available_models() -> list[str]:
                 stem = path.stem.lower()
                 if stem in DEFAULT_MODEL_NAMES:
                     names.append(stem)
+                if path.name.lower() == LEGACY_MODEL_PATH.name.lower():
+                    names.extend(DEFAULT_MODEL_NAMES)
     for name in DEFAULT_MODEL_NAMES:
         if name not in names:
             names.append(name)
@@ -51,6 +55,8 @@ def load_model(model_name: str):
         candidate = directory / f"{cleaned}.joblib"
         if candidate.exists():
             return joblib.load(candidate)
+    if LEGACY_MODEL_PATH.exists():
+        return joblib.load(LEGACY_MODEL_PATH)
     raise FileNotFoundError(f"Trained model artifact not found for '{model_name}'. Run the explicit training command first.")
 
 
