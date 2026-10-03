@@ -1,0 +1,54 @@
+{
+  "project": "f1_tyre_degradation_model",
+  "status": "audit and causal guards implemented",
+  "detected_issues": [
+    {
+      "id": "L1",
+      "feature_or_target": "future_tire_wear_pct / next_lap_wear_increment",
+      "file": "src/f1_tyre/data.py",
+      "function": "build_target_frame",
+      "issue": "The pipeline constructs a next-lap target by shifting the tyre wear series by one row within each race/driver group and then retains a legacy alias including the future peak value. This is a valid target definition only if it is never reused as a feature; it was also being treated as a permitted column in the model pipeline and documented as a legacy feature.",
+      "why_it_is_leakage": "The model could learn from a value that is only available after the prediction moment if the alias is present in the feature matrix or validation split.",
+      "fix": "The target is still computed as a causal next-lap delta, but the explicit feature allowlist rejects any target-proxy columns such as future_tire_wear_pct and next_lap_wear_increment in the feature matrix. The leakage audit now fails if they appear."
+    },
+    {
+      "id": "L2",
+      "feature_or_target": "feature allowlist drift",
+      "file": "src/f1_tyre/config.py",
+      "function": "FORBIDDEN_LEAKAGE_PATTERNS",
+      "issue": "The prior leakage detector relied on substring matching such as 'future', 'next_', and 'status'. This is brittle and can miss edge cases or over-filter variables incorrectly.",
+      "why_it_is_leakage": "A weak audit does not protect against future-derived columns that are not obviously named as future/next values.",
+      "fix": "A strict allowlist-based policy is enforced in src/f1_tyre/strict_feature_policy.py. Unknown or forbidden features raise a ValueError before training."
+    },
+    {
+      "id": "L3",
+      "feature_or_target": "rolling feature causal semantics",
+      "file": "src/f1_tyre/features.py",
+      "function": "add_shifted_rolling",
+      "issue": "Rolling features must use only information available up to the current lap. The project code is correctly using a prior shift before rolling, but it was not protected by an automated causal regression test.",
+      "why_it_is_leakage": "Without a regression test, future rows can silently leak into the rolling window.",
+      "fix": "The synthetic regression test in tests/test_causal_leakage.py verifies that the rolling statistic at lap 4 does not incorporate lap 5 and that the lagged window is causal."
+    }
+  ],
+  "audit_findings": {
+    "true_prediction_moment": "At the end of lap t, predict the degradation increment on lap t+1 using only information known at that time.",
+    "target_definition": "next_lap_wear_increment = tire_wear_pct[t+1] - tire_wear_pct[t]",
+    "causal_boundary": "Rows are valid only when the next row belongs to the same race_id and driver_id, the lap increases by one, the tyre_age_laps increases by exactly one, and the compound stays the same.",
+    "rolling_policy": "For every rolling feature use shift(1) before rolling and never rolling on an unshifted or future-aligned window."
+  },
+  "updated_files": [
+    "src/f1_tyre/evaluation/leakage_audit.py",
+    "src/f1_tyre/strict_feature_policy.py",
+    "tests/test_causal_leakage.py",
+    "src/f1_tyre/__init__.py"
+  ],
+  "verification": {
+    "command": "python -m pytest -q",
+    "result": "19 passed in 3.28s",
+    "evidence": "The project regression suite passed after the leakage guard and causal tests were added."
+  },
+  "original_r2_status": {
+    "statement": "The original 0.9999 R² is not treated as final performance because the project did not have a strict race-disjoint holdout and feature-policy enforcement. The new implementation explicitly rejects target-proxy columns and enforces an allowlist before training.",
+    "fresh_holdout_metric": "No claim is made for a new final unseen-race holdout R² without a fully implemented race-disjoint training/validation/test split and retrained artifacts. The repository now includes the causal guardrails needed to produce such a metric honestly."
+  }
+}
