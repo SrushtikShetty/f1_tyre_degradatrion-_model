@@ -1,5 +1,8 @@
+import json
+
 from fastapi.testclient import TestClient
 
+from backend import app as backend_app
 from backend.app import app
 
 client = TestClient(app)
@@ -26,6 +29,23 @@ def test_model_metrics_endpoint():
     payload = response.json()
     assert 'models' in payload
     assert len(payload['models']) >= 1
+
+
+def test_model_metrics_endpoint_reads_supplementary_report_envelope(monkeypatch, tmp_path):
+    metrics_path = tmp_path / 'model_metrics.json'
+    records = [{
+        'model': 'Ridge',
+        'r2': 0.8,
+        'metric_scope': 'supplementary_grouped_cv',
+        'primary_metric': False,
+    }]
+    metrics_path.write_text(json.dumps({'status': 'SUPPLEMENTARY_GROUPED_CV_ONLY', 'models': records}))
+    monkeypatch.setattr(backend_app, 'MODEL_METRICS_FILE', metrics_path)
+
+    response = client.get('/api/model-metrics')
+
+    assert response.status_code == 200
+    assert response.json()['models'] == records
 
 
 def test_feature_importance_endpoint():

@@ -10,7 +10,7 @@ from src.f1_tyre.config import PROJECT_ROOT
 from src.f1_tyre.hardware import detect_xgboost_device
 from src.f1_tyre.model_loader import save_model_artifact
 
-from .common import RANDOM_STATE, build_preprocessor, prepare_dataset
+from .common import RANDOM_STATE, build_preprocessor, label_supplementary_grouped_cv, prepare_dataset
 
 
 def train(data_dir='.', out_dir='artifacts'):
@@ -31,13 +31,13 @@ def train(data_dir='.', out_dir='artifacts'):
     )
     pipe = Pipeline([('prep', build_preprocessor(X)), ('model', model)])
     preds = cross_val_predict(pipe, X, y, cv=cv, groups=groups, n_jobs=1)
-    metrics = {
+    metrics = label_supplementary_grouped_cv({
         'model': 'XGBoost',
         'r2': float(r2_score(y, preds)),
         'mae': float(mean_absolute_error(y, preds)),
         'rmse': float(np.sqrt(mean_squared_error(y, preds))),
         'device': device,
-    }
+    })
     pipe.fit(X, y)
     artifact = {
         'model': pipe,

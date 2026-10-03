@@ -16,7 +16,14 @@ def main() -> None:
     if not path.exists():
         raise FileNotFoundError("Saved model metrics not found. Run explicit training first.")
     payload = json.loads(path.read_text())
-    print(payload)
+    if isinstance(payload, dict) and payload.get("metric_scope") == "supplementary_grouped_cv":
+        print("SUPPLEMENTARY GROUPED CV ONLY; not a future-race performance claim.")
+        print(f"Protocol: {payload.get('metric_protocol', 'unspecified')}")
+        print(f"Primary chronological metrics: {payload.get('primary_metric_source', 'not recorded')}")
+        print(json.dumps(payload.get("models", []), indent=2))
+    else:
+        print("LEGACY/UNVERIFIED METRICS: split and protocol metadata are unavailable.")
+        print(json.dumps(payload, indent=2))
 
 
 if __name__ == "__main__":

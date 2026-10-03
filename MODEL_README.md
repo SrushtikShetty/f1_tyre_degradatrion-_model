@@ -17,4 +17,4 @@ pip install -r requirements_models.txt
 python train_all_models.py
 ```
 
-Outputs are written to `artifacts/` including one serialized model per algorithm and a model comparison table. Validation is race-grouped with GroupKFold, and results report R², MAE and RMSE for the delta-wear target. Prediction loads trained artifacts only; it does not retrain.
+The legacy trainer writes supplementary five-fold GroupKFold out-of-fold scores to `artifacts/model_metrics.json`; they are not future-race performance and must not be used as the headline claim. The headline results belong to the final chronological holdout in `artifacts/evaluation/final_metrics.json`. Grouped CV may be reported only as supplementary robustness context. Prediction loads saved artifacts only; it does not retrain.

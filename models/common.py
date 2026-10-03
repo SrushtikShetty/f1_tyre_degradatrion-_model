@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any
 import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
@@ -11,6 +12,15 @@ TARGET='next_lap_wear_increment'
 ALLOWED_RAW_FEATURES={'season','race_round','circuit_id','circuit_length_km','circuit_turns','circuit_drs_zones','circuit_overtake_difficulty','circuit_base_lap_time_sec','driver_skill_rating','driver_aggression_rating','driver_consistency_rating','team_id','team_budget_tier','team_car_speed_rating','team_car_downforce_rating','team_engine_supplier','team_car_reliability_rating','team_pit_crew_rating','grid_position','q1_time_sec','q2_time_sec','q3_time_sec','race_total_laps','race_weather_start','lap','position','lap_time_sec','s1_time_sec','s2_time_sec','s3_time_sec','tire_compound','tire_age_laps','fuel_load_kg','ers_deploy_pct','ers_harvest_pct','drs_activated','gap_to_leader_sec','gap_ahead_sec','gap_behind_sec','track_status','weather_current','race_air_temp_c','race_track_temp_c','race_humidity_pct'}
 FORBIDDEN_FEATURES={'tire_wear_pct','future_tire_wear_pct','next_lap_wear_increment','next_lap','next_tire_age','next_compound','finish_position','status','points','fastest_lap','race_weather_end','race_safety_car_deployed','race_red_flag','pit_stop_this_lap','pit_stop_duration_sec','pit_new_compound','race_id','driver_id'}
 ENGINEERED=['sector_total_sec','lap_time_per_km','tire_age_ratio','aggression_x_tire_age','consistency_x_tire_age','track_temp_x_tire_age','air_temp_x_tire_age','overtake_difficulty_x_tire_age','fuel_ratio','total_nearest_gap','position_change','race_progress','car_performance_index']
+
+
+def label_supplementary_grouped_cv(metrics: dict[str, Any]) -> dict[str, Any]:
+    return {
+        **metrics,
+        "metric_scope": "supplementary_grouped_cv",
+        "metric_protocol": "5-fold GroupKFold grouped by race_id using out-of-fold predictions",
+        "primary_metric": False,
+    }
 
 def load_data(data_dir='.'):
     p=Path(data_dir); train=pd.read_csv(p/'train.csv'); test=pd.read_csv(p/'test.csv')
