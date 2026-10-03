@@ -1,0 +1,138 @@
+{
+  "status": "VALIDATION_ONLY_DEVELOPMENT_BASELINES",
+  "dataset": {
+    "type": "synthetic",
+    "path": "data/generated/authoritative_seed_20261004.csv",
+    "sha256": "c9121cdc3f5d00b7ba9e65c3af6bda27a038a9eb2ce6f241f0b94f6af483127a",
+    "seed": 20261004,
+    "rows": 33840
+  },
+  "target": "next_lap_wear_increment: simulated wear realized during lap t+1 from state available at the end of lap t",
+  "baseline_fit_scope": "train only",
+  "evaluation_protocol": {
+    "protocol": "chronological_race_disjoint",
+    "fractions": {
+      "train": 0.6,
+      "validation": 0.2,
+      "holdout": 0.2
+    },
+    "race_ids": {
+      "train": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36
+      ],
+      "validation": [
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48
+      ],
+      "holdout": [
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60
+      ]
+    },
+    "race_counts": {
+      "train": 36,
+      "validation": 12,
+      "holdout": 12
+    },
+    "row_counts": {
+      "train": 20304,
+      "validation": 6768,
+      "holdout": 6768
+    },
+    "integrity": {
+      "zero_race_overlap": true,
+      "zero_race_driver_overlap": true,
+      "zero_tyre_stint_overlap": true,
+      "zero_duplicate_row_overlap": true
+    },
+    "holdout_role": "final evaluation only after model and feature selection are complete"
+  },
+  "final_holdout_scored": false,
+  "metrics": [
+    {
+      "model": "GlobalMean",
+      "split": "validation",
+      "metric_scope": "baseline_validation",
+      "r2": -0.005353464779251471,
+      "mae": 0.28455055298906295,
+      "rmse": 0.3589679751986069,
+      "number_of_rows": 6768,
+      "unseen_lookup_keys": 0
+    },
+    {
+      "model": "CompoundOnly",
+      "split": "validation",
+      "metric_scope": "baseline_validation",
+      "r2": 0.5339660161517339,
+      "mae": 0.18168962834262,
+      "rmse": 0.24440219918785766,
+      "number_of_rows": 6768,
+      "unseen_lookup_keys": 0
+    },
+    {
+      "model": "CompoundAgeLookup",
+      "split": "validation",
+      "metric_scope": "baseline_validation",
+      "r2": 0.7603291382307529,
+      "mae": 0.12783397194993118,
+      "rmse": 0.1752685261253823,
+      "number_of_rows": 6768,
+      "unseen_lookup_keys": 0
+    }
+  ]
+}
