@@ -1,0 +1,7 @@
+variant,model,feature_count,features_removed,r2,mae,rmse,number_of_rows,number_of_races,training_races,holdout_races_seen_during_fit
+A_all_features,XGBoost,101,,0.9999988119766958,0.00017831461257389585,0.0008477416411231787,46084,40,118,0
+B_remove_tire_age_laps,XGBoost,100,tire_age_laps,0.9999936135438131,0.0004052123254385147,0.0019655360104293192,46084,40,118,0
+C_remove_tire_compound,XGBoost,100,tire_compound,0.958339076918888,0.06598040209837662,0.1587506384342022,46084,40,118,0
+D_remove_age_and_compound,XGBoost,99,tire_age_laps;tire_compound,0.958392602683696,0.06615951466886956,0.1586486246072288,46084,40,118,0
+E_remove_age_compound_and_derived_age,XGBoost,97,tire_age_laps;tire_age_ratio;tire_age_squared;tire_compound,0.959277551576772,0.06429317734501462,0.15695240589292403,46084,40,118,0
+F_physical_causal_telemetry_only,XGBoost,77,circuit_base_lap_time_sec;circuit_drs_zones;circuit_id;circuit_length_km;circuit_overtake_difficulty;circuit_turns;driver_aggression_rating;driver_consistency_rating;driver_skill_rating;grid_position;q1_time_sec;q2_time_sec;q3_time_sec;race_round;race_total_laps;race_weather_start;season;team_budget_tier;team_car_downforce_rating;team_car_reliability_rating;team_car_speed_rating;team_engine_supplier;team_id;team_pit_crew_rating,0.999995465495324,0.00024401776614241166,0.0016562121388263955,46084,40,118,0
