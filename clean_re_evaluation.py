@@ -28,7 +28,7 @@ if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 from f1_tyre.config import TARGET_NAME
-from f1_tyre.data import build_target_frame, drop_duplicate_race_laps, ensure_causal_sort
+from f1_tyre.data import build_legacy_target_frame, drop_duplicate_race_laps, ensure_causal_sort
 from f1_tyre.evaluation.leakage_audit import audit_feature_matrix
 from f1_tyre.features import prepare_feature_matrix
 from f1_tyre.strict_feature_policy import ALLOWED_FEATURES
@@ -459,7 +459,7 @@ def main() -> None:
 
     raw = pd.read_csv(train_path)
     raw = ensure_causal_sort(drop_duplicate_race_laps(raw))
-    target_frame = build_target_frame(raw)
+    target_frame = build_legacy_target_frame(raw)
     prepared = prepare_feature_matrix(target_frame)
     blocked = {"race_id", "driver_id", "track_status"}
     feature_columns = [

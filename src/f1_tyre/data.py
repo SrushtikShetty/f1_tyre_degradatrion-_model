@@ -7,6 +7,14 @@ import pandas as pd
 
 from .config import COMMON_GROUP_COLS, LEGACY_TARGET_NAME, MAIN_TARGET, TARGET_NAME
 
+SIMULATED_TARGET_COLUMN = "next_lap_degradation_pct"
+TARGET_ONLY_COLUMNS = {
+    MAIN_TARGET,
+    LEGACY_TARGET_NAME,
+    TARGET_NAME,
+    SIMULATED_TARGET_COLUMN,
+}
+
 
 def require_columns(df: pd.DataFrame, columns: list[str]) -> None:
     missing = [column for column in columns if column not in df.columns]
@@ -28,6 +36,26 @@ def load_dataset(data_dir: str | Path | None = None) -> tuple[pd.DataFrame, pd.D
 
 
 def build_target_frame(df: pd.DataFrame) -> pd.DataFrame:
+    """Build rows labeled by the simulator's explicit next-lap outcome.
+
+    The target is generated from end-of-lap state at t and represents wear
+    realized during t+1. This function does not shift or inspect future rows.
+    """
+    require_columns(df, ["race_id", "driver_id", "lap", SIMULATED_TARGET_COLUMN])
+    out = df.copy().sort_values(COMMON_GROUP_COLS + ["lap"]).reset_index(drop=True)
+    out[TARGET_NAME] = pd.to_numeric(out[SIMULATED_TARGET_COLUMN], errors="coerce")
+    out = out.loc[out[TARGET_NAME].notna()].copy()
+    target_proxies = [
+        column
+        for column in out.columns
+        if column in TARGET_ONLY_COLUMNS - {TARGET_NAME}
+        or (column != TARGET_NAME and str(column).lower().startswith(("next_", "future_")))
+    ]
+    return out.drop(columns=target_proxies).reset_index(drop=True)
+
+
+def build_legacy_target_frame(df: pd.DataFrame) -> pd.DataFrame:
+    """Reconstruct the historical shift-derived target for audit reproduction only."""
     require_columns(df, ["race_id", "driver_id", "lap", "tire_age_laps", "tire_compound", MAIN_TARGET])
     out = df.copy().sort_values(COMMON_GROUP_COLS + ["lap"]).reset_index(drop=True)
     grouped = out.groupby(COMMON_GROUP_COLS, sort=False)
@@ -44,12 +72,28 @@ def build_target_frame(df: pd.DataFrame) -> pd.DataFrame:
         & out["_next_compound"].astype("string").eq(out["tire_compound"].astype("string"))
         & out["_next_wear"].notna()
     )
-
-    prepared = out.loc[valid].drop(
+    return out.loc[valid].drop(
         columns=["_next_lap", "_next_tire_age", "_next_compound", "_next_wear"]
-    ).copy()
-    prepared = prepared.reset_index(drop=True)
-    return prepared
+    ).reset_index(drop=True)
+
+
+def build_model_features(df: pd.DataFrame, feature_columns: list[str]) -> pd.DataFrame:
+    """Select and audit X, refusing target or future-state columns explicitly."""
+    requested = [str(column) for column in feature_columns]
+    forbidden = [
+        column
+        for column in requested
+        if column in TARGET_ONLY_COLUMNS
+        or column.lower().startswith(("next_", "future_"))
+    ]
+    if forbidden:
+        raise ValueError(f"Target or future-state columns cannot enter X: {sorted(set(forbidden))}")
+    require_columns(df, requested)
+    features = df[requested].copy()
+    from .evaluation.leakage_audit import audit_feature_matrix
+
+    audit_feature_matrix(features)
+    return features
 
 
 def ensure_causal_sort(df: pd.DataFrame) -> pd.DataFrame:

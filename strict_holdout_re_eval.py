@@ -22,7 +22,7 @@ if str(PROJECT_ROOT / "src") not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 from src.f1_tyre.config import PROJECT_ROOT
-from src.f1_tyre.data import build_target_frame, drop_duplicate_race_laps, ensure_causal_sort
+from src.f1_tyre.data import build_legacy_target_frame, drop_duplicate_race_laps, ensure_causal_sort
 from src.f1_tyre.evaluation.leakage_audit import audit_feature_matrix
 from src.f1_tyre.features import prepare_feature_matrix
 from src.f1_tyre.strict_feature_policy import ALLOWED_FEATURES
@@ -117,7 +117,7 @@ def safe_feature_columns(df: pd.DataFrame) -> list[str]:
 def prepare_clean_dataset(path: Path) -> tuple[pd.DataFrame, pd.DataFrame, list[str], dict]:
     raw = pd.read_csv(path)
     raw = ensure_causal_sort(drop_duplicate_race_laps(raw))
-    target_df = build_target_frame(raw)
+    target_df = build_legacy_target_frame(raw)
 
     prepared = prepare_feature_matrix(target_df)
     feature_columns = safe_feature_columns(prepared)

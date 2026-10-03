@@ -21,7 +21,7 @@ if str(SRC_ROOT) not in sys.path:
 
 from clean_re_evaluation import build_preprocessor, chronological_races, compute_split_races, make_model
 from f1_tyre.config import TARGET_NAME
-from f1_tyre.data import build_target_frame, drop_duplicate_race_laps, ensure_causal_sort
+from f1_tyre.data import build_legacy_target_frame, drop_duplicate_race_laps, ensure_causal_sort
 from f1_tyre.features import prepare_feature_matrix
 from f1_tyre.strict_feature_policy import ALLOWED_FEATURES
 
@@ -201,7 +201,7 @@ def main() -> None:
     if wear_mismatch_count:
         raise AssertionError(f"Observed wear formula mismatches: {wear_mismatch_count}")
 
-    target_frame = build_target_frame(raw)
+    target_frame = build_legacy_target_frame(raw)
     prepared = prepare_feature_matrix(target_frame)
     feature_columns = [
         column

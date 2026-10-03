@@ -22,6 +22,15 @@ def test_audit_rejects_future_target_proxies():
         audit_feature_matrix(df)
 
 
+@pytest.mark.parametrize(
+    "column",
+    ["next_lap_degradation_pct", "next_lap_wear_increment", "future_tire_wear_pct", "tire_wear_pct"],
+)
+def test_feature_audit_rejects_generated_target_and_future_state(column):
+    with pytest.raises(ValueError):
+        audit_feature_matrix(pd.DataFrame({column: [1.0]}))
+
+
 def test_policy_rejects_unknown_feature_names():
     with pytest.raises(ValueError):
         validate_feature_names(["race_id", "driver_id", "lap", "unknown_feature"])
