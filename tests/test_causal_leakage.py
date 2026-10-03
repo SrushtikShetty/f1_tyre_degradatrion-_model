@@ -84,6 +84,16 @@ def test_lineage_audit_rejects_unregistered_source():
         )
 
 
+def test_lineage_audit_rejects_partition_key_source():
+    features = pd.DataFrame({"lap_time_sec": [90.0]})
+
+    with pytest.raises(ValueError, match="feature lineage"):
+        audit_feature_matrix(
+            features,
+            lineage={"lap_time_sec": ["race_id"]},
+        )
+
+
 def test_rolling_features_are_causal_on_synthetic_data():
     df = pd.DataFrame(
         {

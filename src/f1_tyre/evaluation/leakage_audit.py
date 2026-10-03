@@ -72,7 +72,12 @@ def audit_feature_matrix(
         for source in sources:
             source_name = str(source)
             source_metadata = FEATURE_METADATA.get(source_name)
-            if _is_forbidden_source(source_name) or source_metadata is None:
+            if (
+                _is_forbidden_source(source_name)
+                or source_metadata is None
+                or not source_metadata["allowed"]
+                or source_metadata["availability"] == "partition_only"
+            ):
                 lineage_errors.append(f"{feature} <- {source_name}")
     if lineage_errors:
         raise ValueError("Forbidden or unregistered feature lineage: " + ", ".join(sorted(lineage_errors)))
