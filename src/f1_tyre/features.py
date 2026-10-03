@@ -53,9 +53,7 @@ def add_engineered_features(df: pd.DataFrame) -> pd.DataFrame:
     if "tire_age_laps" in out.columns:
         if "race_total_laps" in out.columns:
             denominator = out["race_total_laps"].replace(0, np.nan)
-        else:
-            denominator = out.groupby("race_id")["lap"].transform("max").replace(0, np.nan)
-        out["tire_age_ratio"] = out["tire_age_laps"] / denominator
+            out["tire_age_ratio"] = out["tire_age_laps"] / denominator
         out["tire_age_squared"] = out["tire_age_laps"] ** 2
     if {"gap_ahead_sec", "gap_behind_sec"}.issubset(out.columns):
         out["total_nearest_gap"] = out["gap_ahead_sec"].abs() + out["gap_behind_sec"].abs()
@@ -70,6 +68,9 @@ def add_engineered_features(df: pd.DataFrame) -> pd.DataFrame:
 
 def prepare_feature_matrix(df: pd.DataFrame) -> pd.DataFrame:
     out = df.copy()
+    causal_order = [*COMMON_GROUP_COLS, "lap"]
+    if all(column in out.columns for column in causal_order):
+        out = out.sort_values(causal_order, kind="mergesort").reset_index(drop=True)
     out = add_group_lags(out, COMMON_GROUP_COLS, [
         "lap_time_sec", "s1_time_sec", "s2_time_sec", "s3_time_sec",
         "position", "gap_to_leader_sec", "gap_ahead_sec", "gap_behind_sec",
