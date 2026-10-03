@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "f1-tyre-wear"
 version = "0.1.0"
-description = "F1 tyre degradation prediction project"
+description = "Synthetic F1-style tyre-wear benchmark with unverified data provenance"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [

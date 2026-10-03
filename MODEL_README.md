@@ -1,8 +1,8 @@
-# Multiple F1 Tyre Degradation Models
+# Models for the Synthetic Tyre-Wear Benchmark
 
-The four regression models share one target: **next-lap tyre-wear increment** (`next_lap_wear_increment`), calculated as next-lap wear minus current-lap wear. Rows are retained only when the next row is the immediately following lap, tyre age advances by one, and the compound is unchanged. Absolute next-lap wear can be reconstructed as current wear plus the predicted increment.
+The four regression models share one derived target: **next-lap tyre-wear increment** (`next_lap_wear_increment`), calculated as next-row wear minus current-row wear. The wear values in the checked-in table exactly follow a constructed compound-and-age schedule. The target is consequently deterministic from compound and age in this dataset; model scores are rule-recovery results, not evidence of learned real-world F1 degradation. Dataset provenance and limitations are documented in [docs/data_provenance.md](docs/data_provenance.md).
 
-The current-lap features represent information available after that lap is complete. Current tyre wear is used only to calculate the target and is excluded from model features. Future-state columns, race-end information, and pit-stop outcomes are also excluded.
+The baseline current-lap features are intended to represent information available at lap end. Current tyre wear is used only to calculate the target and is excluded from model features. The field provenance and feature-time availability remain separate validation questions; see the project audit before making scientific claims.
 
 ## Models
 - Ridge linear regression

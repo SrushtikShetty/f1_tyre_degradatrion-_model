@@ -1,31 +1,31 @@
-# F1 Tyre Degradation Prediction
+# Synthetic F1-Style Tyre-Wear Benchmark
 
 ## Overview
 
-This project predicts the change in tyre wear over the next lap for Formula 1 race data. The modelling objective is to estimate the next-lap tyre-wear increment using a strict causal feature set that excludes future-state and race-end information.
+This project is a modelling experiment on an F1-style, telemetry-shaped dataset whose source provenance is unverified. The checked-in wear labels are constructed from compound and tyre age, and the next-lap target is derived from those labels. The baseline therefore demonstrates recovery of a synthetic rule, not measured Formula 1 tyre-degradation dynamics. See [the provenance register](docs/data_provenance.md) and [the baseline audit](docs/baseline_audit.md).
 
 ## Problem
 
-Tyre degradation is highly sensitive to track conditions, grip, tyre age, stint length, fuel load, pace trends, and driver/race context. The challenge is to estimate how much tyre wear will increase on the next lap without using information that would not have been available at prediction time.
+Real tyre degradation can depend on track conditions, grip, tyre age, stint length, fuel load, pace trends, and driver/race context. Those are plausible scientific factors, but their presence as columns in this dataset does not establish measured provenance or a causal relationship.
 
 ## Objective
 
-The model predicts the next-lap wear increment, which can be interpreted as the incremental degradation during the next lap. The absolute next-lap wear is then reconstructed as:
+The legacy model predicts a next-lap wear increment from the constructed target. It must not be interpreted as a validated physical degradation estimate. The legacy absolute next-lap wear calculation is:
 
 current_wear + predicted_increment
 
 ## Methodology
 
-The project keeps the strongest existing causal logic intact:
+The existing pipeline includes:
 
 - race-grouped causal ordering
 - lap-to-lap lag features
 - rolling historical telemetry windows
 - tyre-age and race-progress features
-- grouped validation to prevent race overlap
+- chronological validation and holdout splits
 - strict exclusion of future-state columns and end-of-race information
 
-The training target is built from the immediate next lap within each race/driver group. This preserves a real temporal target while avoiding leakage from future laps.
+These safeguards do not resolve the deterministic target: compound and age alone identify the next-lap target in the supplied table. Current model scores are not evidence of real-world performance.
 
 ## Models
 
@@ -79,7 +79,7 @@ python inference/interactive_predict.py --model xgboost
 
 ## Web Application
 
-The repository now includes a lightweight web UI that connects to the existing saved model artifacts without retraining. The frontend is served by a FastAPI backend and uses the project’s real inference path.
+The repository includes a lightweight web UI that connects to saved model artifacts without retraining. Its inference path is executable, but the dataset and resulting predictions are a synthetic benchmark experiment, not real-race telemetry or real-world validation.
 
 ### Installation
 

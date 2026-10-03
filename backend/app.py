@@ -32,7 +32,7 @@ FEATURE_IMPORTANCE_FILE = ROOT / 'feature_importance.csv'
 MODEL_METRICS_FILE = ARTIFACTS_DIR / 'model_metrics.json'
 
 
-app = FastAPI(title='F1 Tyre Degradation AI', version='1.0.0')
+app = FastAPI(title='Synthetic Tyre-Wear Benchmark', version='1.0.0')
 app.add_middleware(
     CORSMiddleware,
     allow_origins=['*'],
@@ -247,7 +247,7 @@ def _safe_execute_prediction(model_name: str, frame: pd.DataFrame):
 def health() -> dict[str, Any]:
     return {
         'status': 'ok',
-        'project': 'F1 Tyre Degradation AI',
+        'project': 'Synthetic Tyre-Wear Benchmark',
         'available_models': list_available_models(),
     }
 
