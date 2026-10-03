@@ -14,3 +14,5 @@ The prediction boundary is the end of lap `t`. A model row may use the state obs
 | Future-derived or unavailable | Next-lap telemetry, future wear, finishing position, race-end weather, final points/status, pit outcomes from after lap `t` | Not valid model inputs; rejected by the feature policy and excluded from the generated current-state rows. |
 
 `prepare_feature_matrix` sorts by race-driver-lap before creating histories. Causal regression tests perturb a later row and verify an earlier engineered row is unchanged. These availability rules establish temporal construction in the simulator; they do not establish that legacy CSV fields are genuine measurements.
+
+The code-level registry is `FEATURE_METADATA` in `src/f1_tyre/strict_feature_policy.py`. Each registered feature records its source, availability, data type, transformation, derived/lagged/rolling flags, allow status, and input lineage. `audit_feature_matrix` checks both feature names and registered or explicitly supplied lineage dependencies. Race and driver identifiers are partition keys only, never predictive inputs.

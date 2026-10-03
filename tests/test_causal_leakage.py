@@ -3,7 +3,7 @@ import pytest
 
 from f1_tyre.evaluation.leakage_audit import audit_feature_matrix
 from f1_tyre.features import add_shifted_rolling
-from f1_tyre.strict_feature_policy import validate_feature_names
+from f1_tyre.strict_feature_policy import FEATURE_METADATA, validate_feature_names
 
 
 def test_audit_rejects_future_target_proxies():
@@ -34,6 +34,54 @@ def test_feature_audit_rejects_generated_target_and_future_state(column):
 def test_policy_rejects_unknown_feature_names():
     with pytest.raises(ValueError):
         validate_feature_names(["race_id", "driver_id", "lap", "unknown_feature"])
+
+
+def test_registry_covers_allowlisted_features_with_required_metadata():
+    required = {
+        "source",
+        "availability",
+        "data_type",
+        "transformation",
+        "derived",
+        "lagged",
+        "rolling",
+        "allowed",
+        "lineage",
+    }
+
+    assert FEATURE_METADATA
+    assert all(required <= set(metadata) for metadata in FEATURE_METADATA.values())
+    assert FEATURE_METADATA["lap_time_sec_roll5_mean"]["rolling"] is True
+    assert FEATURE_METADATA["lap_time_sec_roll5_mean"]["availability"] == "rolling_prior_history"
+
+
+def test_current_track_status_is_not_mistaken_for_race_result_status():
+    assert audit_feature_matrix(pd.DataFrame({"track_status": ["GREEN"]})) is True
+
+
+def test_partition_identifiers_cannot_be_model_features():
+    with pytest.raises(ValueError, match="Partition identifiers"):
+        audit_feature_matrix(pd.DataFrame({"race_id": [1]}))
+
+
+def test_lineage_audit_rejects_future_source_under_allowed_feature_name():
+    features = pd.DataFrame({"lap_time_sec": [90.0]})
+
+    with pytest.raises(ValueError, match="feature lineage"):
+        audit_feature_matrix(
+            features,
+            lineage={"lap_time_sec": ["next_lap_lap_time_sec"]},
+        )
+
+
+def test_lineage_audit_rejects_unregistered_source():
+    features = pd.DataFrame({"lap_time_sec": [90.0]})
+
+    with pytest.raises(ValueError, match="feature lineage"):
+        audit_feature_matrix(
+            features,
+            lineage={"lap_time_sec": ["future_surface_summary"]},
+        )
 
 
 def test_rolling_features_are_causal_on_synthetic_data():

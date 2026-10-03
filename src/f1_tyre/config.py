@@ -19,8 +19,8 @@ LEGACY_TARGET_NAME = "future_tire_wear_pct"
 MAIN_TARGET = "tire_wear_pct"
 
 FORBIDDEN_LEAKAGE_PATTERNS = (
-    "target",
-    "future",
+    "target_",
+    "future_",
     "next_",
     "finish",
     "points",
@@ -29,5 +29,4 @@ FORBIDDEN_LEAKAGE_PATTERNS = (
     "pit_new",
     "race_end",
     "race_result",
-    "status",
 )
