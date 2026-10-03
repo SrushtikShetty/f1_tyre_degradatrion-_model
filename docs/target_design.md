@@ -18,4 +18,6 @@ Since observable current race state and latent factors vary, compound and age al
 
 ## Diagnostic Requirements
 
-For every generated dataset, record target unique-value count and distribution, overall variance, within-compound-age variance, compound-age lookup holdout metrics, and target associations with individual input fields. Reject the generated benchmark if compound-age groups remain constant or the lookup reaches the project guard threshold. Report results as synthetic-simulation performance only.
+For every generated dataset, record target unique-value count and distribution, overall variance, within-compound-age variance, conditional binned entropy, variance explained by compound/age/compound-plus-age, and numeric feature associations. The diagnostic uses a fixed 0.05 percentage-point target bin width for entropy and reports that width with the estimate.
+
+The research-validation guard rejects a compound-age lookup with R² **at or above 0.98** on development validation. This is not a desired performance cutoff: it is a deliberately high ceiling intended to catch accidental recovery of a nearly deterministic target from only compound and age. It is not a substitute for inspecting within-group variance or the final chronological holdout. Only a report explicitly marked `deterministic_demo` may bypass this guard. Report all results as synthetic-simulation performance only.
