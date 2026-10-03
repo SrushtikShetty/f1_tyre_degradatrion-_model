@@ -1,4 +1,5 @@
 import pandas as pd
+import pytest
 
 from data_generation.generate_dataset import generate_dataset, load_config
 from evaluation.compare_baselines import run as report_baselines
@@ -50,6 +51,23 @@ def test_global_mean_baseline_uses_training_mean():
     predictions, _ = baselines["GlobalMean"].predict(validation)
 
     assert predictions.tolist() == [3.0, 3.0]
+
+
+def test_final_holdout_baseline_scoring_requires_explicit_finalization():
+    train = _frame(["HARD", "SOFT"], [1, 1], [1.0, 5.0])
+    holdout = _frame(["HARD", "SOFT"], [2, 2], [2.0, 4.0])
+    baselines = fit_baseline_models(train)
+
+    with pytest.raises(ValueError, match="explicit final evaluation authorization"):
+        score_baselines(baselines, holdout, evaluation_split="final_holdout")
+
+    metrics = score_baselines(
+        baselines,
+        holdout,
+        evaluation_split="final_holdout",
+        allow_final_holdout=True,
+    )
+    assert {item["split"] for item in metrics} == {"final_holdout"}
 
 
 def test_baseline_report_records_hash_and_does_not_score_holdout(tmp_path):

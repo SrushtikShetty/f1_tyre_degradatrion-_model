@@ -1,0 +1,183 @@
+{
+  "title": "Synthetic Tyre-Wear Benchmark: Final Chronological Evaluation",
+  "dataset_type": "synthetic",
+  "research_scope": "Results apply only to the versioned synthetic simulator, not measured F1 races.",
+  "target_definition": "Simulated wear increment realized during lap t+1 from race state available at the end of lap t.",
+  "prediction_moment": "end of lap t; features use state known no later than end of t",
+  "race_counts": {
+    "train": 36,
+    "validation": 12,
+    "holdout": 12
+  },
+  "metrics": {
+    "models": [
+      {
+        "model": "ridge",
+        "validation": {
+          "r2": 0.8878156070439187,
+          "mae": 0.08883278619756002,
+          "rmse": 0.1199119697405152,
+          "number_of_rows": 6768
+        },
+        "final_holdout": {
+          "r2": 0.8314400958081967,
+          "mae": 0.10095741287760117,
+          "rmse": 0.13004859947566896,
+          "number_of_rows": 6768
+        },
+        "model_config": {
+          "alpha": 3.0
+        }
+      },
+      {
+        "model": "random_forest",
+        "validation": {
+          "r2": 0.9067123703434237,
+          "mae": 0.0818360886122571,
+          "rmse": 0.10934737076732204,
+          "number_of_rows": 6768
+        },
+        "final_holdout": {
+          "r2": 0.8782007870164682,
+          "mae": 0.08342728771764805,
+          "rmse": 0.11054797272097391,
+          "number_of_rows": 6768
+        },
+        "model_config": {
+          "n_estimators": 180,
+          "min_samples_leaf": 3,
+          "max_features": 0.8,
+          "n_jobs": -1,
+          "random_state": 42
+        }
+      },
+      {
+        "model": "xgboost",
+        "validation": {
+          "r2": 0.9240633708082425,
+          "mae": 0.07354417013394024,
+          "rmse": 0.09865565251393453,
+          "number_of_rows": 6768
+        },
+        "final_holdout": {
+          "r2": 0.9119949374093644,
+          "mae": 0.07064280403515551,
+          "rmse": 0.09396851630989837,
+          "number_of_rows": 6768
+        },
+        "model_config": {
+          "n_estimators": 250,
+          "max_depth": 4,
+          "learning_rate": 0.04,
+          "subsample": 0.8,
+          "colsample_bytree": 0.8,
+          "objective": "reg:squarederror",
+          "tree_method": "hist",
+          "device": "cpu",
+          "n_jobs": -1,
+          "random_state": 42
+        }
+      },
+      {
+        "model": "neural_network",
+        "validation": {
+          "r2": 0.7762125097899034,
+          "mae": 0.12016416693791636,
+          "rmse": 0.16936131563079246,
+          "number_of_rows": 6768
+        },
+        "final_holdout": {
+          "r2": 0.7937591082674128,
+          "mae": 0.1138619443730016,
+          "rmse": 0.1438520086831764,
+          "number_of_rows": 6768
+        },
+        "model_config": {
+          "hidden_layer_sizes": [
+            64,
+            32
+          ],
+          "activation": "relu",
+          "solver": "adam",
+          "learning_rate_init": 0.001,
+          "max_iter": 180,
+          "early_stopping": true,
+          "validation_fraction": 0.15,
+          "n_iter_no_change": 15,
+          "batch_size": 512,
+          "random_state": 42
+        }
+      }
+    ],
+    "baselines": [
+      {
+        "model": "GlobalMean",
+        "split": "validation",
+        "metric_scope": "baseline_validation",
+        "r2": -0.005353464779251471,
+        "mae": 0.28455055298906295,
+        "rmse": 0.3589679751986069,
+        "number_of_rows": 6768,
+        "unseen_lookup_keys": 0
+      },
+      {
+        "model": "CompoundOnly",
+        "split": "validation",
+        "metric_scope": "baseline_validation",
+        "r2": 0.5339660161517339,
+        "mae": 0.18168962834262,
+        "rmse": 0.24440219918785766,
+        "number_of_rows": 6768,
+        "unseen_lookup_keys": 0
+      },
+      {
+        "model": "CompoundAgeLookup",
+        "split": "validation",
+        "metric_scope": "baseline_validation",
+        "r2": 0.7603291382307529,
+        "mae": 0.12783397194993118,
+        "rmse": 0.1752685261253823,
+        "number_of_rows": 6768,
+        "unseen_lookup_keys": 0
+      },
+      {
+        "model": "GlobalMean",
+        "split": "final_holdout",
+        "metric_scope": "final_holdout_baseline",
+        "r2": -0.00012257904536450148,
+        "mae": 0.2542632770333165,
+        "rmse": 0.31677810591030614,
+        "number_of_rows": 6768,
+        "unseen_lookup_keys": 0
+      },
+      {
+        "model": "CompoundOnly",
+        "split": "final_holdout",
+        "metric_scope": "final_holdout_baseline",
+        "r2": 0.5382431390466034,
+        "mae": 0.1676746274561429,
+        "rmse": 0.21524606475666008,
+        "number_of_rows": 6768,
+        "unseen_lookup_keys": 0
+      },
+      {
+        "model": "CompoundAgeLookup",
+        "split": "final_holdout",
+        "metric_scope": "final_holdout_baseline",
+        "r2": 0.7899768657310919,
+        "mae": 0.11199139601960449,
+        "rmse": 0.14516506381137256,
+        "number_of_rows": 6768,
+        "unseen_lookup_keys": 0
+      }
+    ]
+  },
+  "compound_age_lookup_holdout_r2": 0.7899768657310919,
+  "feature_importance_method": "grouped permutation on validation; predictive association only",
+  "shap_computed": false,
+  "limitations": [
+    "The data are synthetic and do not establish real-world Formula 1 accuracy.",
+    "Simulator coefficients and latent distributions are design assumptions, not empirically calibrated physical laws.",
+    "Feature importance describes model dependence and is not causal evidence."
+  ]
+}

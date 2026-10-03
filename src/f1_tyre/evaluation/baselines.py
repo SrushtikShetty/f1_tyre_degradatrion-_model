@@ -82,8 +82,14 @@ def score_baselines(
     baselines: dict[str, MedianLookupBaseline],
     validation: pd.DataFrame,
     target_column: str = "next_lap_wear_increment",
+    evaluation_split: str = "validation",
+    allow_final_holdout: bool = False,
 ) -> list[dict[str, Any]]:
-    """Score fitted TRAIN-only baselines on VALIDATION, not the final holdout."""
+    """Score TRAIN-only baselines; holdout scoring requires explicit finalization."""
+    if evaluation_split not in {"validation", "final_holdout"}:
+        raise ValueError("evaluation_split must be 'validation' or 'final_holdout'.")
+    if evaluation_split == "final_holdout" and not allow_final_holdout:
+        raise ValueError("Final holdout scoring requires explicit final evaluation authorization.")
     if target_column not in validation:
         raise ValueError(f"Validation frame is missing target column {target_column!r}.")
     valid = validation.loc[validation[target_column].notna()].copy()
@@ -97,8 +103,8 @@ def score_baselines(
         results.append(
             {
                 "model": name,
-                "split": "validation",
-                "metric_scope": "baseline_validation",
+                "split": evaluation_split,
+                "metric_scope": "final_holdout_baseline" if evaluation_split == "final_holdout" else "baseline_validation",
                 "r2": float(r2_score(actual, predicted)),
                 "mae": float(mean_absolute_error(actual, predicted)),
                 "rmse": float(np.sqrt(mean_squared_error(actual, predicted))),
