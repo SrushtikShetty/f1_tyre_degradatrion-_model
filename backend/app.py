@@ -273,19 +273,32 @@ def get_model_metrics() -> dict[str, Any]:
 @app.get('/api/feature-importance')
 def get_feature_importance() -> dict[str, Any]:
     if not FEATURE_IMPORTANCE_FILE.exists():
-        return {'features': []}
+        return {
+            'features': [],
+            'method': 'unavailable',
+            'interpretation': 'No predictive feature-importance data is available.',
+        }
 
     with FEATURE_IMPORTANCE_FILE.open('r', encoding='utf-8', newline='') as handle:
         reader = csv.DictReader(handle)
         features = []
+        methods = set()
         for row in reader:
+            method = row.get('method', '').strip()
+            if method:
+                methods.add(method)
             record = {
                 'feature': row.get('feature', '').strip(),
                 'importance': float(row.get('importance', 0.0) or 0.0),
             }
             if record['feature']:
                 features.append(record)
-    return {'features': features[:30], 'count': len(features)}
+    return {
+        'features': features[:30],
+        'count': len(features),
+        'method': next(iter(methods)) if len(methods) == 1 else 'legacy_unspecified',
+        'interpretation': 'Global predictive association only; not causal importance or a local attribution.',
+    }
 
 
 @app.post('/api/explain')
@@ -301,34 +314,23 @@ def explain_prediction(payload: PredictionRequest) -> dict[str, Any]:
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
-    feature_rows = []
-    if FEATURE_IMPORTANCE_FILE.exists():
-        with FEATURE_IMPORTANCE_FILE.open('r', encoding='utf-8', newline='') as handle:
-            reader = csv.DictReader(handle)
-            for line in reader:
-                feature = line.get('feature', '').strip()
-                importance = float(line.get('importance', 0.0) or 0.0)
-                if feature:
-                    value = row.get(feature, 0.0)
-                    if isinstance(value, str):
-                        value = 0.0
-                    feature_rows.append({
-                        'feature': feature,
-                        'value': float(value),
-                        'importance': importance,
-                        'direction': 'positive' if float(value) >= 0 else 'negative',
-                    })
-    else:
-        for feature in feature_columns[:10]:
-            value = row.get(feature, 0.0)
-            if isinstance(value, str):
-                value = 0.0
-            feature_rows.append({'feature': feature, 'value': float(value), 'importance': 0.0, 'direction': 'positive'})
+    importance_response = get_feature_importance()
+    feature_associations = [
+        {
+            'feature': feature['feature'],
+            'input_value': row.get(feature['feature']),
+            'predictive_importance': feature['importance'],
+        }
+        for feature in importance_response['features'][:10]
+    ]
 
     return {
         'model': model_name,
-        'feature_contributions': feature_rows[:10],
-        'notes': 'This explanation is based on the saved feature-importance data and local model inputs; no SHAP values are currently computed by the project.',
+        'explanation_method': 'global_predictive_importance_association',
+        'importance_method': importance_response['method'],
+        'local_attribution_computed': False,
+        'feature_associations': feature_associations,
+        'notes': 'Global predictive importance is shown beside input values for context. It is not a local contribution or causal effect; no SHAP values are computed.',
     }
 
 

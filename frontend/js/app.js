@@ -16,6 +16,16 @@ function showStatus(message, isError = false) {
   formStatus.style.color = isError ? '#f7b5a5' : '#f1d184';
 }
 
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[character]);
+}
+
 function setLoadingState(isLoading) {
   submitButton.disabled = isLoading;
   submitButton.textContent = isLoading ? 'Running inference...' : 'Predict Next-Lap Degradation';
@@ -167,7 +177,7 @@ function renderFeatureImportanceTable(features) {
       <div class="explanation-item">
         <div>
           <strong>${label}</strong>
-          <span>Global contribution</span>
+          <span>Predictive importance</span>
         </div>
         <span>${importance}</span>
       </div>
@@ -235,7 +245,7 @@ function renderPrediction(result) {
 async function fetchExplain(payload) {
   try {
     const explanation = await fetchJson('/api/explain', { method: 'POST', body: JSON.stringify(payload) });
-    const items = explanation.feature_contributions || [];
+    const items = explanation.feature_associations || [];
     const wrapper = document.getElementById('localExplanation');
     if (!wrapper) {
       return;
@@ -243,10 +253,10 @@ async function fetchExplain(payload) {
     wrapper.innerHTML = items.slice(0, 5).map((item) => `
       <div class="explanation-item">
         <div>
-          <strong>${item.feature}</strong>
-          <span>${item.direction}</span>
+          <strong>${escapeHtml(item.feature)}</strong>
+          <span>Input: ${escapeHtml(item.input_value ?? '--')}</span>
         </div>
-        <span>${Number(item.value ?? 0).toFixed(2)}</span>
+        <span>${Number(item.predictive_importance ?? 0).toFixed(4)}</span>
       </div>
     `).join('') || '<p class="result-copy">No explanation data is available for this prediction.</p>';
   } catch (error) {

@@ -70,7 +70,7 @@ function renderImportanceChart(features) {
     data: {
       labels,
       datasets: [{
-        label: 'Feature importance',
+        label: 'Predictive importance',
         data: importances,
         backgroundColor: '#e23a3a',
         borderRadius: 8,

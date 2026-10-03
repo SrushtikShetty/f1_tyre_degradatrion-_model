@@ -293,16 +293,17 @@
         <section id="explainability" class="container section-block">
           <div class="section-heading">
             <p class="label">Explainability</p>
-            <h2>Global feature importance and local prediction explanation</h2>
+            <h2>Predictive feature importance</h2>
           </div>
 
           <div class="explain-grid">
             <div class="chart-card">
-              <h3>Global feature importance</h3>
-              <canvas id="importanceChart" aria-label="Feature importance chart"></canvas>
+              <h3>Global predictive importance</h3>
+              <canvas id="importanceChart" aria-label="Global predictive feature importance chart"></canvas>
             </div>
             <div class="chart-card">
-              <h3>Local prediction explanation</h3>
+              <h3>Input context</h3>
+              <p class="result-copy">Global importance describes model association, not a local contribution or causal effect. SHAP is not computed.</p>
               <div id="localExplanation" class="explanation-list"></div>
             </div>
           </div>
@@ -328,11 +329,11 @@
           </div>
           <div class="about-copy">
             <p>
-              This system predicts the next-lap tyre-wear increment using a strict, causal feature set that excludes future-state race information.
-              It incorporates lag features, rolling telemetry, race-grouped validation, and model-agnostic explainability based on saved feature importance data.
+              This benchmark predicts a simulated next-lap tyre-wear increment using features available at the stated prediction moment.
+              Saved importance values describe predictive association only; they do not establish physical causality or a local effect.
             </p>
             <p>
-              The project intentionally avoids future tyre wear, next-race conditions, finish position, and pit-stop outcomes. Driver aggression is included as a context variable in the causal prediction pipeline.
+              The feature policy excludes target and future-state fields. No SHAP or local feature-attribution method is currently computed.
             </p>
           </div>
         </section>

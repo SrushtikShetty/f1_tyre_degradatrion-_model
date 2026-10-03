@@ -54,6 +54,24 @@ def test_feature_importance_endpoint():
     payload = response.json()
     assert 'features' in payload
     assert len(payload['features']) >= 1
+    assert payload['method'] == 'legacy_unspecified'
+    assert 'not causal' in payload['interpretation']
+
+
+def test_explain_endpoint_does_not_claim_local_contributions_or_shap():
+    response = client.post('/api/explain', json={
+        'model': 'xgboost',
+        'inputs': {'tire_compound': 'HARD', 'tire_age_laps': 3},
+    })
+
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload['explanation_method'] == 'global_predictive_importance_association'
+    assert payload['importance_method'] == 'legacy_unspecified'
+    assert payload['local_attribution_computed'] is False
+    assert 'feature_associations' in payload
+    assert 'feature_contributions' not in payload
+    assert 'causal effect' in payload['notes']
 
 
 def test_prediction_endpoint_uses_real_model_artifact():
