@@ -31,6 +31,15 @@ def test_feature_audit_rejects_generated_target_and_future_state(column):
         audit_feature_matrix(pd.DataFrame({column: [1.0]}))
 
 
+@pytest.mark.parametrize(
+    "column",
+    ["future_surface_summary", "next_lap_lap_time_sec", "next_tyre_state_proxy", "race_result_position"],
+)
+def test_feature_audit_rejects_pattern_based_future_or_result_proxies(column):
+    with pytest.raises(ValueError, match="Leakage detected"):
+        audit_feature_matrix(pd.DataFrame({column: [1.0]}))
+
+
 def test_policy_rejects_unknown_feature_names():
     with pytest.raises(ValueError):
         validate_feature_names(["race_id", "driver_id", "lap", "unknown_feature"])
@@ -57,6 +66,11 @@ def test_registry_covers_allowlisted_features_with_required_metadata():
 
 def test_current_track_status_is_not_mistaken_for_race_result_status():
     assert audit_feature_matrix(pd.DataFrame({"track_status": ["GREEN"]})) is True
+
+
+def test_race_result_status_column_is_rejected():
+    with pytest.raises(ValueError, match="Leakage detected"):
+        audit_feature_matrix(pd.DataFrame({"status": ["Finished"]}))
 
 
 def test_partition_identifiers_cannot_be_model_features():
@@ -92,6 +106,21 @@ def test_lineage_audit_rejects_partition_key_source():
             features,
             lineage={"lap_time_sec": ["race_id"]},
         )
+
+
+def test_allowed_feature_lineage_sources_are_registered_and_available():
+    errors = []
+    for feature, metadata in FEATURE_METADATA.items():
+        if not metadata["allowed"]:
+            continue
+        for source in metadata["lineage"]:
+            source_metadata = FEATURE_METADATA.get(source)
+            if source_metadata is None:
+                errors.append(f"{feature} <- {source}: missing source metadata")
+            elif not source_metadata["allowed"]:
+                errors.append(f"{feature} <- {source}: source is not model-available")
+
+    assert errors == []
 
 
 def test_rolling_features_are_causal_on_synthetic_data():
