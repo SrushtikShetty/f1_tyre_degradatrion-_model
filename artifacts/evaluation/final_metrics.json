@@ -7,6 +7,8 @@
     "sha256": "c9121cdc3f5d00b7ba9e65c3af6bda27a038a9eb2ce6f241f0b94f6af483127a",
     "generation_seed": 20261004,
     "rows": 33840,
+    "raw_rows": 34560,
+    "modeling_rows": 33840,
     "races": 60
   },
   "target": {

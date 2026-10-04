@@ -189,6 +189,16 @@ def _score(actual: pd.Series | np.ndarray, predicted: np.ndarray) -> dict[str, f
     }
 
 
+def _dataset_row_metadata(dataset_path: Path, labeled: pd.DataFrame) -> dict[str, int]:
+    raw_rows = int(sum(1 for _ in dataset_path.open("r", encoding="utf-8"))) - 1
+    modeling_rows = int(len(labeled))
+    return {
+        "rows": modeling_rows,
+        "raw_rows": raw_rows,
+        "modeling_rows": modeling_rows,
+    }
+
+
 def _development_paths(seed: int) -> tuple[Path, Path]:
     return (
         PROJECT_ROOT / "artifacts" / "models" / f"development_seed_{seed}",
@@ -245,7 +255,7 @@ def _fit_development(
             "type": "synthetic",
             "path": dataset_path.resolve().relative_to(PROJECT_ROOT).as_posix(),
             "sha256": dataset_hash,
-            "rows": int(len(labeled)),
+            **_dataset_row_metadata(dataset_path, labeled),
             "races": int(labeled["race_id"].nunique()),
         },
         "evaluation_protocol": protocol,
@@ -403,7 +413,7 @@ def _finalize_evaluation(dataset_path: Path, seed: int) -> dict[str, Any]:
             "path": dataset_path.resolve().relative_to(PROJECT_ROOT).as_posix(),
             "sha256": dataset_hash,
             "generation_seed": seed,
-            "rows": int(len(labeled)),
+            **_dataset_row_metadata(dataset_path, labeled),
             "races": int(labeled["race_id"].nunique()),
         },
         "target": {
