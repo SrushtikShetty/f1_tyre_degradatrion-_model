@@ -17,7 +17,7 @@ function destroyChart(key) {
 
 function renderModelComparisonChart(metrics) {
   const ctx = getChartContext('modelComparisonChart');
-  if (!ctx || !metrics || !metrics.length) {
+  if (!ctx || typeof Chart === 'undefined' || !metrics || !metrics.length) {
     return;
   }
 
@@ -32,17 +32,22 @@ function renderModelComparisonChart(metrics) {
       datasets: [{
         label: 'R² score',
         data: r2Values,
-        backgroundColor: ['#e23a3a', '#ff7b54', '#9fdbd8', '#7a93ff'],
-        borderRadius: 8,
+        backgroundColor: ['#ed443b', '#d08d4c', '#86cbb2', '#9baeb5'],
+        borderRadius: 4,
       }],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (context) => `R² ${context.parsed.y.toFixed(4)}` } },
+      },
       scales: {
         y: {
-          beginAtZero: false,
+          beginAtZero: true,
+          max: 1,
+          title: { display: true, text: 'R² score', color: '#a1afb5' },
           ticks: { color: '#dfeaf1' },
           grid: { color: 'rgba(255,255,255,0.06)' },
         },
@@ -57,7 +62,7 @@ function renderModelComparisonChart(metrics) {
 
 function renderImportanceChart(features) {
   const ctx = getChartContext('importanceChart');
-  if (!ctx || !features || !features.length) {
+  if (!ctx || typeof Chart === 'undefined' || !features || !features.length) {
     return;
   }
 
@@ -72,17 +77,21 @@ function renderImportanceChart(features) {
       datasets: [{
         label: 'Predictive importance',
         data: importances,
-        backgroundColor: '#e23a3a',
-        borderRadius: 8,
+        backgroundColor: '#ed443b',
+        borderRadius: 4,
       }],
     },
     options: {
       indexAxis: 'y',
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (context) => `Importance ${context.parsed.x.toFixed(4)}` } },
+      },
       scales: {
         x: {
+          title: { display: true, text: 'Predictive importance', color: '#a1afb5' },
           ticks: { color: '#dfeaf1' },
           grid: { color: 'rgba(255,255,255,0.06)' },
         },
@@ -95,43 +104,95 @@ function renderImportanceChart(features) {
   });
 }
 
-function renderEmptyChart(canvasId, title) {
-  const ctx = getChartContext(canvasId);
+function renderPredictionCharts(result) {
+  const chartCanvas = document.getElementById('wearProjectionChart');
+  const emptyState = document.getElementById('wearProjectionEmpty');
+  const compoundTag = document.getElementById('projectionCompound');
+  if (!chartCanvas || !emptyState) {
+    return;
+  }
+
+  destroyChart('wearProjection');
+  const inputs = result?.inputs || {};
+  const currentWear = Number(inputs.tire_wear_pct);
+  const nextWear = Number(result?.next_lap_wear_estimate);
+  const tyreAge = Number(inputs.tire_age_laps);
+  if (!Number.isFinite(currentWear) || !Number.isFinite(nextWear) || !Number.isFinite(tyreAge)) {
+    chartCanvas.hidden = true;
+    emptyState.hidden = false;
+    emptyState.textContent = result
+      ? 'A wear projection is unavailable because the response did not include both wear values.'
+      : 'Run a prediction to plot the current wear and one-lap estimate.';
+    if (compoundTag) {
+      compoundTag.textContent = result?.inputs?.tire_compound || 'Awaiting prediction';
+    }
+    return;
+  }
+
+  if (typeof Chart === 'undefined') {
+    chartCanvas.hidden = true;
+    emptyState.hidden = false;
+    emptyState.textContent = 'The chart library could not be loaded. The prediction result is still available above.';
+    return;
+  }
+
+  const ctx = chartCanvas.getContext('2d');
   if (!ctx) {
     return;
   }
-  destroyChart(canvasId);
-  const gradient = ctx.createLinearGradient(0, 0, 0, 200);
-  gradient.addColorStop(0, 'rgba(226, 58, 58, 0.18)');
-  gradient.addColorStop(1, 'rgba(226, 58, 58, 0.02)');
-  chartRegistry[canvasId] = new Chart(ctx, {
+
+  chartCanvas.hidden = false;
+  emptyState.hidden = true;
+  if (compoundTag) {
+    compoundTag.textContent = inputs.tire_compound || 'Compound not supplied';
+  }
+
+  chartRegistry.wearProjection = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: ['No data'],
+      labels: [`Current · age ${tyreAge}`, `Next lap · age ${tyreAge + 1}`],
       datasets: [{
-        label: title,
-        data: [0],
-        borderColor: 'rgba(226,58,58,0.45)',
-        backgroundColor: gradient,
-        borderWidth: 1,
-        pointRadius: 0,
+        label: 'Tyre wear',
+        data: [currentWear, nextWear],
+        borderColor: '#ed443b',
+        backgroundColor: 'rgba(237, 68, 59, 0.12)',
+        pointBackgroundColor: ['#a1afb5', '#ed443b'],
+        pointBorderColor: '#11181d',
+        pointBorderWidth: 2,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        borderWidth: 2,
+        tension: 0.15,
+        fill: false,
       }],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: (items) => items[0]?.dataIndex === 1 ? 'Model estimate · next lap' : 'Submitted tyre state',
+            label: (context) => `${context.parsed.y.toFixed(2)}% tyre wear`,
+          },
+        },
+      },
       scales: {
-        x: { display: false },
-        y: { display: false },
+        x: {
+          title: { display: true, text: 'Tyre age', color: '#a1afb5' },
+          ticks: { color: '#dfeaf1' },
+          grid: { display: false },
+        },
+        y: {
+          title: { display: true, text: 'Tyre wear (%)', color: '#a1afb5' },
+          min: Math.max(0, Math.floor(Math.min(currentWear, nextWear) - 3)),
+          max: Math.ceil(Math.max(currentWear, nextWear) + 3),
+          ticks: { color: '#dfeaf1' },
+          grid: { color: 'rgba(255,255,255,0.07)' },
+        },
       },
     },
   });
-}
-
-function renderPredictionCharts() {
-  renderEmptyChart('degradationVsAgeChart', 'Predicted degradation vs tyre age');
-  renderEmptyChart('lapTimeChart', 'Lap time trend');
-  renderEmptyChart('degradationTrendChart', 'Tyre degradation trend');
-  renderEmptyChart('aggressionVsDegradationChart', 'Driver aggression vs degradation');
 }

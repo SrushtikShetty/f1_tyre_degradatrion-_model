@@ -13,7 +13,45 @@ const formStatus = document.getElementById('formStatus');
 
 function showStatus(message, isError = false) {
   formStatus.textContent = message;
-  formStatus.style.color = isError ? '#f7b5a5' : '#f1d184';
+  formStatus.dataset.state = isError ? 'error' : message ? 'success' : '';
+}
+
+class UserFacingError extends Error {}
+
+function modelLabel(modelName) {
+  const labels = {
+    xgboost: 'XGBoost',
+    random_forest: 'Random Forest',
+    neural_network: 'Neural Network',
+    ridge: 'Ridge',
+  };
+  return labels[String(modelName).toLowerCase()] || String(modelName).replaceAll('_', ' ');
+}
+
+function requestErrorMessage(status, detail) {
+  if (status === 422) {
+    const message = String(detail || '');
+    if (/^Lap must be between/i.test(message)) {
+      return 'Current lap must be between 1 and total race laps.';
+    }
+    if (/^Tyre age must be zero or greater/i.test(message)) {
+      return 'Tyre age must be zero or greater.';
+    }
+    if (/^Air temperature must be between/i.test(message)) {
+      return 'Air temperature must be between -40°C and 80°C.';
+    }
+    if (/^Track temperature must be between/i.test(message)) {
+      return 'Track temperature must be between -20°C and 90°C.';
+    }
+    if (/^Humidity must be between/i.test(message)) {
+      return 'Humidity must be between 0% and 100%.';
+    }
+    return 'Some race inputs are invalid. Review the highlighted values and try again.';
+  }
+  if (status === 503) {
+    return 'The selected saved model is unavailable right now.';
+  }
+  return 'The prediction service could not complete this request. Try again shortly.';
 }
 
 function escapeHtml(value) {
@@ -29,6 +67,7 @@ function escapeHtml(value) {
 function setLoadingState(isLoading) {
   submitButton.disabled = isLoading;
   submitButton.textContent = isLoading ? 'Running inference...' : 'Predict Next-Lap Degradation';
+  submitButton.setAttribute('aria-busy', String(isLoading));
 }
 
 function normalizePayloadValue(key, value) {
@@ -82,7 +121,7 @@ async function fetchJson(url, options = {}) {
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(payload.detail || payload.error || 'Request failed.');
+    throw new UserFacingError(requestErrorMessage(response.status, payload.detail || payload.error));
   }
   return payload;
 }
@@ -97,6 +136,11 @@ async function initializeDashboard() {
     state.metrics = metricsResponse.models || [];
     state.featureImportance = featureResponse.features || [];
 
+    const appStatus = document.getElementById('appStatusText');
+    if (appStatus) {
+      appStatus.textContent = 'Saved models ready';
+    }
+
     renderModelOptions(state.models);
     renderModelComparisonChart(state.metrics);
     renderImportanceChart(state.featureImportance);
@@ -104,7 +148,12 @@ async function initializeDashboard() {
     renderMetricsTable(state.metrics);
     renderFeatureImportanceTable(state.featureImportance);
   } catch (error) {
-    showStatus(error.message || 'The model metadata could not be loaded.', true);
+    const appStatus = document.getElementById('appStatusText');
+    if (appStatus) {
+      appStatus.textContent = 'Model service unavailable';
+      appStatus.parentElement.dataset.state = 'error';
+    }
+    showStatus('Model information could not be loaded. Refresh the page and try again.', true);
   }
 }
 
@@ -127,13 +176,14 @@ function renderMetricsCards(metrics) {
   const entries = Array.isArray(metrics) ? metrics : [];
   const cards = entries.map((entry) => {
     const modelName = entry.model || entry.Model || 'Model';
+    const displayName = modelLabel(modelName);
     const r2 = Number(entry.r2 ?? entry.R2 ?? 0).toFixed(4);
     const mae = Number(entry.mae ?? entry.MAE ?? 0).toFixed(4);
     const rmse = Number(entry.rmse ?? entry.RMSE ?? 0).toFixed(4);
     const selected = modelName.toLowerCase() === modelSelect.value.toLowerCase();
     return `
       <article class="metric-card ${selected ? 'highlight' : ''}">
-        <span class="label">${modelName}</span>
+        <span class="label">${escapeHtml(displayName)}</span>
         <strong>R² ${r2}</strong>
         <div>MAE ${mae}</div>
         <div>RMSE ${rmse}</div>
@@ -155,7 +205,7 @@ function renderMetricsTable(metrics) {
     const rmse = Number(entry.rmse ?? entry.RMSE ?? 0).toFixed(4);
     return `
       <tr>
-        <td>${name}</td>
+        <td>${escapeHtml(modelLabel(name))}</td>
         <td>${r2}</td>
         <td>${mae}</td>
         <td>${rmse}</td>
@@ -171,12 +221,12 @@ function renderFeatureImportanceTable(features) {
     return;
   }
   const entries = (features || []).slice(0, 6).map((feature) => {
-    const label = feature.feature || feature.name || 'Feature';
+    const label = String(feature.feature || feature.name || 'Feature').replaceAll('_', ' ');
     const importance = Number(feature.importance || 0).toFixed(4);
     return `
       <div class="explanation-item">
         <div>
-          <strong>${label}</strong>
+          <strong>${escapeHtml(label)}</strong>
           <span>Predictive importance</span>
         </div>
         <span>${importance}</span>
@@ -203,7 +253,7 @@ function renderPrediction(result) {
   const compound = document.getElementById('resultCompound');
   const selectedModel = document.getElementById('resultModel');
   const nextLapWear = document.getElementById('resultNextLapWear');
-  const modelLabel = document.getElementById('heroModelLabel');
+  const heroModel = document.getElementById('heroModelLabel');
   const heroPrediction = document.getElementById('heroPredictionValue');
   const aggressionValue = document.getElementById('heroAggressionValue');
   const inputs = result.inputs || {};
@@ -217,7 +267,7 @@ function renderPrediction(result) {
   nextLapWear.textContent = Number.isFinite(Number(result.next_lap_wear_estimate))
     ? `${Number(result.next_lap_wear_estimate).toFixed(2)}%`
     : 'Not available';
-  modelLabel.textContent = (result.model || modelSelect.value).replace('_', ' ');
+  heroModel.textContent = modelLabel(result.model || modelSelect.value);
   aggressionValue.textContent = `${aggression}`;
 
   interpretation.textContent = `The model predicts a degradation increment of ${Math.abs(prediction).toFixed(2)} percentage points for the next lap.`;
@@ -244,33 +294,79 @@ function renderPrediction(result) {
   document.getElementById('telemetryGap').textContent = `${inputs.gap_to_leader_sec ?? '--'} s`;
   document.getElementById('telemetryPosition').textContent = `${inputs.position ?? '--'}`;
   document.getElementById('telemetryAggression').textContent = `${aggression}`;
+  renderPredictionCharts(result);
+}
+
+function validateInputs(inputs) {
+  const fields = Array.from(form.querySelectorAll('[name]'));
+  const clearInvalid = () => fields.forEach((field) => field.removeAttribute('aria-invalid'));
+  clearInvalid();
+
+  const invalidField = (name, message) => {
+    const field = fields.find((item) => item.name === name);
+    if (field) {
+      field.setAttribute('aria-invalid', 'true');
+      const group = field.closest('details');
+      if (group) {
+        group.open = true;
+      }
+      field.focus();
+    }
+    showStatus(message, true);
+    return false;
+  };
+
+  const emptyField = fields.find((field) => !String(field.value).trim());
+  if (emptyField) {
+    return invalidField(emptyField.name, 'Complete all model inputs before running a prediction.');
+  }
+
+  const bounds = [
+    ['lap', 1, Number(inputs.race_total_laps), 'Current lap must be between 1 and total race laps.'],
+    ['tire_age_laps', 0, Number.POSITIVE_INFINITY, 'Tyre age must be zero or greater.'],
+    ['race_air_temp_c', -40, 80, 'Air temperature must be between -40°C and 80°C.'],
+    ['race_track_temp_c', -20, 90, 'Track temperature must be between -20°C and 90°C.'],
+    ['race_humidity_pct', 0, 100, 'Humidity must be between 0% and 100%.'],
+  ];
+  for (const [name, minimum, maximum, message] of bounds) {
+    const value = Number(inputs[name]);
+    if (!Number.isFinite(value) || value < minimum || value > maximum) {
+      return invalidField(name, message);
+    }
+  }
+  return true;
 }
 
 async function fetchExplain(payload) {
+  const wrapper = document.getElementById('localExplanation');
+  if (!wrapper) {
+    return true;
+  }
   try {
     const explanation = await fetchJson('/api/explain', { method: 'POST', body: JSON.stringify(payload) });
     const items = explanation.feature_associations || [];
-    const wrapper = document.getElementById('localExplanation');
-    if (!wrapper) {
-      return;
-    }
     wrapper.innerHTML = items.slice(0, 5).map((item) => `
       <div class="explanation-item">
         <div>
-          <strong>${escapeHtml(item.feature)}</strong>
+          <strong>${escapeHtml(String(item.feature || '').replaceAll('_', ' '))}</strong>
           <span>Input: ${escapeHtml(item.input_value ?? '--')}</span>
         </div>
         <span>${Number(item.predictive_importance ?? 0).toFixed(4)}</span>
       </div>
     `).join('') || '<p class="result-copy">No explanation data is available for this prediction.</p>';
+    return true;
   } catch (error) {
-    showStatus(error.message || 'The local explanation endpoint could not be reached.', true);
+    wrapper.textContent = 'Input associations are temporarily unavailable. The prediction itself is unchanged.';
+    return false;
   }
 }
 
 async function handleSubmit(event) {
   event.preventDefault();
   const payload = buildPayload();
+  if (!validateInputs(payload.inputs)) {
+    return;
+  }
   try {
     showStatus('');
     setLoadingState(true);
@@ -280,21 +376,29 @@ async function handleSubmit(event) {
     });
     state.prediction = result;
     renderPrediction(result);
-    await fetchExplain(payload);
-    showStatus('Prediction generated successfully.');
+    const explanationLoaded = await fetchExplain(payload);
+    showStatus(explanationLoaded
+      ? 'Prediction generated successfully.'
+      : 'Prediction generated. Feature associations are unavailable.');
   } catch (error) {
-    showStatus(error.message || 'Prediction could not be generated.', true);
+    showStatus(error instanceof UserFacingError
+      ? error.message
+      : 'Prediction could not be generated. Check the inputs and try again.', true);
   } finally {
     setLoadingState(false);
   }
 }
 
 modelSelect.addEventListener('change', () => {
-  document.getElementById('heroModelLabel').textContent = modelSelect.options[modelSelect.selectedIndex].textContent;
+  document.getElementById('heroModelLabel').textContent = modelLabel(modelSelect.value);
   renderMetricsCards(state.metrics);
 });
 
 form.addEventListener('submit', handleSubmit);
+form.addEventListener('input', (event) => {
+  event.target.removeAttribute('aria-invalid');
+  showStatus('');
+});
 
 const scrollButtons = document.querySelectorAll('[data-scroll]');
 scrollButtons.forEach((button) => {

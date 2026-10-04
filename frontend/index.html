@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="/static/css/style.css" />
+    <link rel="stylesheet" href="/static/css/style.css?v=2" />
   </head>
   <body>
     <div class="page-shell">
@@ -28,7 +28,7 @@
             <a href="#model-performance">Model insights</a>
             <a href="#explainability">Feature importance</a>
             <a href="#about">Methodology</a>
-            <span class="system-status"><i aria-hidden="true"></i> Saved models ready</span>
+            <span class="system-status"><i aria-hidden="true"></i><span id="appStatusText">Checking model service</span></span>
           </div>
         </nav>
       </header>
@@ -250,8 +250,9 @@
 
         <section id="model-performance" class="container section-block">
           <div class="section-heading">
-            <p class="label">Model performance</p>
-            <h2>Saved model comparison</h2>
+            <p class="label">Model insights</p>
+            <h2>Saved model evaluation</h2>
+            <p class="section-intro">Final holdout scores on this benchmark. They describe benchmark performance, not accuracy on measured race telemetry.</p>
           </div>
           <div id="metricsCards" class="metrics-grid"></div>
           <div class="chart-card wide-card">
@@ -272,22 +273,21 @@
           </div>
         </section>
 
-        <section class="container section-block charts-grid" aria-label="Prediction and degradation chart area">
-          <div class="chart-card">
-            <h3>Predicted degradation vs tyre age</h3>
-            <canvas id="degradationVsAgeChart"></canvas>
+        <section id="tyre-analysis" class="container section-block" aria-label="Tyre wear projection">
+          <div class="section-heading">
+            <p class="label">Tyre analysis</p>
+            <h2>One-lap wear projection</h2>
+            <p class="section-intro">The live prediction provides one next-lap estimate, not a historical stint series. This view compares only the submitted wear state with that model output.</p>
           </div>
-          <div class="chart-card">
-            <h3>Lap time trend</h3>
-            <canvas id="lapTimeChart"></canvas>
-          </div>
-          <div class="chart-card">
-            <h3>Tyre degradation trend</h3>
-            <canvas id="degradationTrendChart"></canvas>
-          </div>
-          <div class="chart-card">
-            <h3>Driver aggression vs degradation</h3>
-            <canvas id="aggressionVsDegradationChart"></canvas>
+          <div class="chart-card projection-card">
+            <div class="chart-heading">
+              <h3>Current tyre wear to next-lap estimate</h3>
+              <span id="projectionCompound" class="compound-tag">Awaiting prediction</span>
+            </div>
+            <div id="wearProjectionEmpty" class="chart-empty" role="status">Run a prediction to plot the current wear and one-lap estimate.</div>
+            <div class="chart-plot">
+              <canvas id="wearProjectionChart" aria-label="Current tyre wear and next-lap model estimate" hidden></canvas>
+            </div>
           </div>
         </section>
 
@@ -341,7 +341,7 @@
       </main>
     </div>
 
-    <script src="/static/js/charts.js"></script>
-    <script src="/static/js/app.js?v=2"></script>
+    <script src="/static/js/charts.js?v=2"></script>
+    <script src="/static/js/app.js?v=3"></script>
   </body>
 </html>
