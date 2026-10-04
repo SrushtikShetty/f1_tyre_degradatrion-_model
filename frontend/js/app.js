@@ -189,10 +189,10 @@ function renderFeatureImportanceTable(features) {
 function formatPrediction(value) {
   const numericValue = Number(value || 0);
   if (Number.isNaN(numericValue)) {
-    return '+0.00 %';
+    return '--';
   }
   const prefix = numericValue >= 0 ? '+' : '-';
-  return `${prefix}${Math.abs(numericValue).toFixed(2)} %`;
+  return `${prefix}${Math.abs(numericValue).toFixed(2)} pp`;
 }
 
 function renderPrediction(result) {
@@ -202,6 +202,7 @@ function renderPrediction(result) {
   const tyreAge = document.getElementById('resultTyreAge');
   const compound = document.getElementById('resultCompound');
   const selectedModel = document.getElementById('resultModel');
+  const nextLapWear = document.getElementById('resultNextLapWear');
   const modelLabel = document.getElementById('heroModelLabel');
   const heroPrediction = document.getElementById('heroPredictionValue');
   const aggressionValue = document.getElementById('heroAggressionValue');
@@ -213,6 +214,9 @@ function renderPrediction(result) {
   tyreAge.textContent = `${inputs.tire_age_laps ?? '--'} laps`;
   compound.textContent = inputs.tire_compound || '--';
   selectedModel.textContent = result.model || modelSelect.value;
+  nextLapWear.textContent = Number.isFinite(Number(result.next_lap_wear_estimate))
+    ? `${Number(result.next_lap_wear_estimate).toFixed(2)}%`
+    : 'Not available';
   modelLabel.textContent = (result.model || modelSelect.value).replace('_', ' ');
   aggressionValue.textContent = `${aggression}`;
 

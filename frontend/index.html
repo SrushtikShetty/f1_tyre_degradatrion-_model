@@ -3,11 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Synthetic Tyre-Wear Benchmark</title>
-    <meta name="description" content="Saved-model inference for a constructed F1-style tyre-wear benchmark." />
+    <title>Tyre Strategy Lab | F1 Benchmark Analytics</title>
+    <meta name="description" content="Saved-model tyre wear estimation and benchmark analytics." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="/static/css/style.css" />
   </head>
@@ -15,20 +15,20 @@
     <div class="page-shell">
       <header class="topbar">
         <nav class="nav container" aria-label="Main navigation">
-          <div class="brand" aria-label="Synthetic Tyre-Wear Benchmark">
-            <span class="brand-mark">F1</span>
+          <div class="brand" aria-label="Tyre Strategy Lab">
+            <span class="brand-mark" aria-hidden="true">TS</span>
             <div>
-              <strong>SYNTHETIC TYRE-WEAR</strong>
-              <small>F1-Style Benchmark Experiment</small>
+              <strong>TYRE STRATEGY LAB</strong>
+              <small>F1 benchmark analytics</small>
             </div>
           </div>
           <div class="nav-links">
             <a href="#overview">Dashboard</a>
-            <a href="#prediction">Prediction</a>
-            <a href="#driver-analysis">Driver Analysis</a>
-            <a href="#model-performance">Model Performance</a>
-            <a href="#explainability">Explainability</a>
-            <a href="#about">About</a>
+            <a href="#prediction">Predict</a>
+            <a href="#model-performance">Model insights</a>
+            <a href="#explainability">Feature importance</a>
+            <a href="#about">Methodology</a>
+            <span class="system-status"><i aria-hidden="true"></i> Saved models ready</span>
           </div>
         </nav>
       </header>
@@ -36,15 +36,14 @@
       <main>
         <section id="overview" class="hero container">
           <div class="section-copy">
-            <p class="eyebrow">Constructed Benchmark • Saved-Model Inference</p>
-            <h1>Simulated Tyre-Wear Prediction</h1>
+            <p class="eyebrow">RACE ENGINEERING / MODEL WORKBENCH</p>
+            <h1>Tyre wear, one lap ahead.</h1>
             <p class="lede">
-              This experiment predicts a derived target from a synthetic-style, provenance-unverified dataset.
-              Its performance does not establish accuracy on measured Formula 1 races.
+              Explore the saved model’s next-lap wear estimate against the current race and tyre state. Benchmark outputs are research estimates, not live timing or measured race telemetry.
             </p>
             <div class="cta-row">
-              <button class="primary-btn" type="button" data-scroll="#prediction">Run Prediction</button>
-              <button class="secondary-btn" type="button" data-scroll="#model-performance">View Model Performance</button>
+              <button class="primary-btn" type="button" data-scroll="#prediction">Configure prediction <span aria-hidden="true">↘</span></button>
+              <button class="secondary-btn" type="button" data-scroll="#model-performance">Model performance</button>
             </div>
           </div>
           <div class="hero-panel">
@@ -53,7 +52,7 @@
               <strong id="heroModelLabel">XGBoost</strong>
             </div>
             <div class="mini-kpi">
-              <span>Predicted next-lap delta</span>
+              <span>Next-lap wear increment</span>
               <strong id="heroPredictionValue">Awaiting input</strong>
             </div>
             <div class="mini-kpi">
@@ -67,14 +66,14 @@
           <div class="panel panel-form">
             <div class="panel-header">
               <div>
-                <p class="label">Live prediction</p>
-                <h2>Tyre degradation input</h2>
+                  <p class="label">Prediction setup</p>
+                  <h2>Race state</h2>
               </div>
             </div>
 
             <form id="predictionForm" novalidate>
-              <div class="field-group">
-                <h3>Driver / Race Context</h3>
+              <details class="field-group" open>
+                <summary>Race / session</summary>
                 <div class="form-grid">
                   <label><span>Season</span><input name="season" type="number" value="2024" /></label>
                   <label><span>Race round</span><input name="race_round" type="number" value="12" /></label>
@@ -88,10 +87,10 @@
                   <label><span>Total race laps</span><input name="race_total_laps" type="number" value="58" /></label>
                   <label><span>Current track position</span><input name="position" type="number" value="2" /></label>
                 </div>
-              </div>
+              </details>
 
-              <div class="field-group">
-                <h3>Tyre</h3>
+              <details class="field-group" open>
+                <summary>Tyre state</summary>
                 <div class="form-grid">
                   <label><span>Tyre compound</span>
                     <select name="tire_compound">
@@ -105,10 +104,10 @@
                   <label><span>Tyre age (laps)</span><input name="tire_age_laps" type="number" value="14" /></label>
                   <label><span>Current tyre wear (%)</span><input name="tire_wear_pct" type="number" value="32.5" step="0.1" /></label>
                 </div>
-              </div>
+              </details>
 
-              <div class="field-group">
-                <h3>Telemetry</h3>
+              <details class="field-group">
+                <summary>Lap telemetry</summary>
                 <div class="form-grid">
                   <label><span>Lap time (s)</span><input name="lap_time_sec" type="number" value="88.7" step="0.1" /></label>
                   <label><span>Sector 1 (s)</span><input name="s1_time_sec" type="number" value="28.2" step="0.1" /></label>
@@ -123,20 +122,20 @@
                   <label><span>DRS activated</span><input name="drs_activated" type="number" value="1" step="1" /></label>
                   <label><span>Track status</span><input name="track_status" type="text" value="Green" /></label>
                 </div>
-              </div>
+              </details>
 
-              <div class="field-group">
-                <h3>Weather</h3>
+              <details class="field-group">
+                <summary>Track conditions</summary>
                 <div class="form-grid">
                   <label><span>Air temp (C)</span><input name="race_air_temp_c" type="number" value="29.1" step="0.1" /></label>
                   <label><span>Track temp (C)</span><input name="race_track_temp_c" type="number" value="38.2" step="0.1" /></label>
                   <label><span>Humidity (%)</span><input name="race_humidity_pct" type="number" value="52" /></label>
                   <label><span>Current weather</span><input name="weather_current" type="text" value="Clear" /></label>
                 </div>
-              </div>
+              </details>
 
-              <div class="field-group">
-                <h3>Driver / Team / Circuit Characteristics</h3>
+              <details class="field-group">
+                <summary>Driver, team / circuit model inputs</summary>
                 <div class="form-grid">
                   <label><span>Driver skill rating</span><input name="driver_skill_rating" type="number" value="92" /></label>
                   <label><span>Driver aggression rating</span><input name="driver_aggression_rating" type="number" value="78" /></label>
@@ -156,7 +155,7 @@
                   <label><span>Driver ID</span><input name="driver_id" type="number" value="101" /></label>
                   <label><span>Circuit ID</span><input name="circuit_id" type="number" value="5" /></label>
                 </div>
-              </div>
+              </details>
 
               <div class="field-group model-selector-wrap">
                 <label class="selector-label" for="modelSelect">Model</label>
@@ -183,15 +182,17 @@
             <div class="panel result-panel">
               <div class="panel-header compact">
                 <div>
-                  <p class="label">Prediction result</p>
-                  <h2>Predicted Next-Lap Degradation</h2>
+                  <p class="label">Model output</p>
+                  <h2>Next-lap wear increment</h2>
                 </div>
               </div>
-              <div class="result-value" id="predictionValue">+0.00 %</div>
+              <div class="result-value" id="predictionValue" aria-live="polite">--</div>
+              <div class="result-unit">percentage points</div>
               <div class="result-meta">
                 <span>Current tyre age: <strong id="resultTyreAge">--</strong></span>
                 <span>Compound: <strong id="resultCompound">--</strong></span>
                 <span>Selected model: <strong id="resultModel">--</strong></span>
+                <span>Estimated wear next lap: <strong id="resultNextLapWear">--</strong></span>
               </div>
               <p id="predictionInterpretation" class="result-copy">
                 Awaiting a prediction run.
@@ -201,8 +202,8 @@
             <div id="driver-analysis" class="panel driver-panel">
               <div class="panel-header compact">
                 <div>
-                  <p class="label">Driver aggression analysis</p>
-                  <h2>Driver aggression profile</h2>
+                  <p class="label">Driver inputs</p>
+                  <h2>Driver context</h2>
                 </div>
               </div>
               <div class="gauge-wrap">
@@ -220,7 +221,7 @@
                 <div><span>Tyre age</span><strong id="driverTyreAgeStat">--</strong></div>
               </div>
               <p class="result-copy">
-                Driver aggression is incorporated as a causal contextual feature in the prediction pipeline.
+                These are supplied model inputs. The display does not isolate their individual effect on the prediction.
               </p>
             </div>
 
@@ -341,6 +342,6 @@
     </div>
 
     <script src="/static/js/charts.js"></script>
-    <script src="/static/js/app.js"></script>
+    <script src="/static/js/app.js?v=2"></script>
   </body>
 </html>
