@@ -1,0 +1,39 @@
+{
+  "source_files": [
+    "train.csv",
+    "test.csv"
+  ],
+  "source_row_counts": {
+    "train.csv": 233640,
+    "test.csv": 12916
+  },
+  "source_total_rows": 246556,
+  "derived_row_count": 246556,
+  "lineage_columns": [
+    "_source_file",
+    "_source_row_number"
+  ],
+  "target_name": "next_lap_wear_increment",
+  "target_definition": "simulated tyre-wear increment for the next lap from current-lap observable state only",
+  "seed": 42,
+  "dataset_hash": "sha256:dcce80bdaf2fb9a78f650137d138d9c472222a57b141ebd53195404d9cdbbc2b",
+  "notes": "The original benchmark was split across multiple CSV files because GitHub rejects individual files above 100 MB. Each split file contains the same columns and deterministic row ordering from the original derived dataset, and the parts can be concatenated to recover the exact benchmark.",
+  "dataset_path": "data/derived/original_derived_seed_42_part1.csv",
+  "dataset_files": [
+    "data/derived/original_derived_seed_42_part1.csv",
+    "data/derived/original_derived_seed_42_part2.csv"
+  ],
+  "split_row_counts": {
+    "original_derived_seed_42_part1.csv": 123278,
+    "original_derived_seed_42_part2.csv": 123278
+  },
+  "source_train_sha256": "4658e3933acbc9a709bab6ec134394d8ac4172bb8e2320289d25c7d40d7a9226",
+  "source_test_sha256": "3b12af8d5db2797963998c573894d44b185c323754f13e8db6d3509d62f8b2d2",
+  "part_sha256": {
+    "original_derived_seed_42_part1.csv": "d00727d736d56132b5b7dd2d6a58b023f7d007a7a2a30ad83b0e98d8e2efe540",
+    "original_derived_seed_42_part2.csv": "26ad1c1d5e02402285bf99b58829fab0a894af1817499883b67f75dc0fda9804"
+  },
+  "combined_dataset_sha256": "dcce80bdaf2fb9a78f650137d138d9c472222a57b141ebd53195404d9cdbbc2b",
+  "derived_dataset_sha256": "dcce80bdaf2fb9a78f650137d138d9c472222a57b141ebd53195404d9cdbbc2b",
+  "github_file_size_note": "The original single CSV exceeded GitHub's 100 MB per-file limit; the benchmark is therefore stored as deterministic split files under 100 MB each."
+}
