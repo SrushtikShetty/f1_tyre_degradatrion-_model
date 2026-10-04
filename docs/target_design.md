@@ -12,9 +12,9 @@ The first implementation is `calculate_next_lap_degradation_pct` in `src/f1_tyre
 
 Age increases stress smoothly. Thermal stress grows with distance from a compound-specific operating point and ambient temperature. Circuit load, pace, fuel fraction, driver aggression, traffic, and race progress contribute bounded effects. The coefficients are benchmark assumptions, not values calibrated against real F1 measurements.
 
-`tyre_sensitivity` represents per-stint variation in tyre construction. `surface_shock` represents a bounded next-lap realization of local surface and load variability. The generator samples these latent factors from documented distributions; they are not given to the model. They are structured simulator state, not an arbitrary Gaussian perturbation added to an otherwise deterministic label.
+`tyre_sensitivity` represents per-stint variation in tyre construction. `surface_shock` represents a bounded next-lap realization of local surface and load variability. Additional underscore-prefixed internal helpers such as `_pace_stress`, `_circuit_load_index`, and `_traffic_intensity` convert observable current-lap state into bounded simulator inputs. These fields are dropped before export and are not given to the model. They are structured simulator state, not an arbitrary Gaussian perturbation added to an otherwise deterministic label.
 
-Since observable current race state and latent factors vary, compound and age alone cannot determine the label. The compound-age lookup must be computed on the generated chronological holdout and published beside statistical models. The existing `train.csv`, labels, and saved metrics remain the legacy baseline until the generator and training path are integrated; this design document does not claim that they are already corrected.
+Since observable current race state and latent factors vary, compound and age alone cannot determine the label. The compound-age lookup is computed beside statistical models under the chronological protocol, and the authoritative corrected run is recorded in `artifacts/evaluation/final_metrics.json`.
 
 ## Diagnostic Requirements
 

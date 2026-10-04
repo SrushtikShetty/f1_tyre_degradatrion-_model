@@ -11,6 +11,16 @@ from data_generation.generate_dataset import (
     load_config,
 )
 from f1_tyre.strict_feature_policy import ALLOWED_FEATURES
+from training.train_corrected_models import prepare_training_data
+
+
+LATENT_SIMULATOR_COLUMNS = {
+    "_pace_stress",
+    "_circuit_load_index",
+    "_traffic_intensity",
+    "_tyre_sensitivity",
+    "_surface_shock",
+}
 
 
 def _small_config():
@@ -46,7 +56,28 @@ def test_target_and_simulator_latents_are_not_model_features():
 
     assert TARGET_COLUMN not in model_features
     assert "tire_wear_pct" not in model_features
-    assert not {"_tyre_sensitivity", "_surface_shock", "tyre_sensitivity", "surface_shock"} & set(generated.columns)
+    assert not LATENT_SIMULATOR_COLUMNS & set(generated.columns)
+    assert not {column.removeprefix("_") for column in LATENT_SIMULATOR_COLUMNS} & set(generated.columns)
+
+
+def test_latent_simulator_columns_are_internal_to_target_attachment():
+    states = generate_race_states(_small_config(), seed=32)
+    generated = attach_simulated_targets(states, seed=32)
+
+    assert LATENT_SIMULATOR_COLUMNS <= set(states.columns)
+    assert not LATENT_SIMULATOR_COLUMNS & set(generated.columns)
+    assert TARGET_COLUMN in generated.columns
+
+
+def test_corrected_training_boundary_excludes_latent_simulator_columns(tmp_path):
+    path = tmp_path / "generated.csv"
+    generate_dataset(_small_config(), seed=33).to_csv(path, index=False)
+
+    _, _, feature_frames, feature_columns, _ = prepare_training_data(path)
+
+    assert not LATENT_SIMULATOR_COLUMNS & set(feature_columns)
+    for frame in feature_frames.values():
+        assert not LATENT_SIMULATOR_COLUMNS & set(frame.columns)
 
 
 def test_changing_current_causal_state_changes_target_with_same_seed():
