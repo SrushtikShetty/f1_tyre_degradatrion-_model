@@ -27,6 +27,6 @@ After model/configuration decisions are complete, run finalization exactly once.
 python -m training.train_corrected_models --dataset data/generated/authoritative_seed_20261004.csv --seed 20261004 --finalize
 ```
 
-Corrected model artifacts are saved under `artifacts/models/corrected/`; legacy models remain untouched. Authoritative output is written to `artifacts/evaluation/final_metrics.json` and `artifacts/evaluation/final_report.json`.
+Corrected model artifacts are saved under `artifacts/models/corrected/`; legacy models remain untouched. The corrected inference registry is `artifacts/models/corrected/registry.json`, and production loading must use that registry rather than scanning legacy artifact directories. Authoritative output is written to `artifacts/evaluation/final_metrics.json` and `artifacts/evaluation/final_report.json`.
 
 The generated CSV contains 34,560 raw race-state rows. The authoritative evaluation reports 33,840 modeling rows because each race-driver final lap has no next-lap label and is excluded before splitting and scoring. Evaluation artifacts preserve both counts as `raw_rows` and `modeling_rows`; the legacy-compatible `rows` field refers to modeling rows.

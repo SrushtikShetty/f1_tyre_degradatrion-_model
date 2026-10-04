@@ -466,6 +466,7 @@ def _finalize_evaluation(dataset_path: Path, seed: int) -> dict[str, Any]:
     }
 
     CORRECTED_MODEL_DIR.mkdir(parents=True, exist_ok=True)
+    registry_models: dict[str, Any] = {}
     for model_name, pipeline in pipelines.items():
         joblib.dump(
             {
@@ -490,6 +491,27 @@ def _finalize_evaluation(dataset_path: Path, seed: int) -> dict[str, Any]:
             },
             CORRECTED_MODEL_DIR / f"{model_name}.joblib",
         )
+        registry_models[model_name] = {
+            "artifact_path": f"artifacts/models/corrected/{model_name}.joblib",
+            "target": TARGET_NAME,
+            "feature_columns": feature_columns,
+            "metrics": next(item for item in model_metrics if item["model"] == model_name),
+            "model_config": MODEL_CONFIGS[model_name],
+        }
+
+    (CORRECTED_MODEL_DIR / "registry.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "artifact_scope": "corrected_chronological_synthetic_benchmark",
+                "dataset": final_metrics["dataset"],
+                "evaluation_metrics_path": "artifacts/evaluation/final_metrics.json",
+                "models": registry_models,
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
 
     (EVALUATION_DIR / "feature_importance_seed_20261004.json").write_text(
         json.dumps({"method": "grouped_permutation_validation", "results": importance_records}, indent=2),
