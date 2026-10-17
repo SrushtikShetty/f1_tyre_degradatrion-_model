@@ -341,6 +341,7 @@ def get_feature_importance() -> dict[str, Any]:
 
 @app.post('/api/explain')
 def explain_prediction(payload: PredictionRequest) -> dict[str, Any]:
+    """Return global grouped permutation results; do not imply local attribution."""
     model_name = payload.model.strip().lower()
     if model_name not in list_available_models():
         raise HTTPException(status_code=422, detail=f'Invalid model name: {payload.model}. Available models: {list_available_models()}')
@@ -348,29 +349,26 @@ def explain_prediction(payload: PredictionRequest) -> dict[str, Any]:
     artifact = load_model(model_name)
     feature_columns = artifact.get('feature_columns', [])
     try:
-        row = _build_legacy_feature_row(payload.inputs, feature_columns)
+        # Validate the submitted inputs against the model's expected input schema.
+        _build_legacy_feature_row(payload.inputs, feature_columns)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     importance_response = get_feature_importance()
-    feature_associations = [
-        {
-            'feature': feature['feature'],
-            'input_value': row.get(feature['feature']),
-            'predictive_importance': feature['importance'],
-        }
-        for feature in importance_response['features'][:10]
-    ]
-
     return {
         'model': model_name,
-        'explanation_method': 'global_predictive_importance_association',
-        'importance_method': importance_response['method'],
+        'explanation_method': importance_response.get('method', 'unavailable'),
+        'importance_method': importance_response.get('method', 'unavailable'),
+        'metric': importance_response.get('metric', 'increase_in_mae'),
+        'feature_groups': importance_response.get('features', [])[:10],
         'local_attribution_computed': False,
-        'feature_associations': feature_associations,
-        'notes': 'Global predictive importance is shown beside input values for context. It is not a local contribution or causal effect; no SHAP values are computed.',
+        'shap_computed': False,
+        'notes': (
+            'These are grouped permutation results calculated on validation data from the synthetic benchmark. '
+            'They quantify the increase in MAE after a feature group is permuted. They are not local prediction '
+            'contributions, causal effects, or SHAP values.'
+        ),
     }
-
 
 @app.post('/api/predict')
 def predict(payload: PredictionRequest) -> dict[str, Any]:
