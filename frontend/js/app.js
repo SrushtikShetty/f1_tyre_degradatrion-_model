@@ -227,7 +227,7 @@ function renderFeatureImportanceTable(features) {
       <div class="explanation-item">
         <div>
           <strong>${escapeHtml(label)}</strong>
-          <span>Predictive importance</span>
+          <span>Validation MAE increase after group permutation</span>
         </div>
         <span>${importance}</span>
       </div>
@@ -344,19 +344,19 @@ async function fetchExplain(payload) {
   }
   try {
     const explanation = await fetchJson('/api/explain', { method: 'POST', body: JSON.stringify(payload) });
-    const items = explanation.feature_associations || [];
-    wrapper.innerHTML = items.slice(0, 5).map((item) => `
+    const items = explanation.feature_groups || [];
+    wrapper.innerHTML = items.slice(0, 6).map((item) => `
       <div class="explanation-item">
         <div>
           <strong>${escapeHtml(String(item.feature || '').replaceAll('_', ' '))}</strong>
-          <span>Input: ${escapeHtml(item.input_value ?? '--')}</span>
+          <span>Validation MAE increase after group permutation</span>
         </div>
-        <span>${Number(item.predictive_importance ?? 0).toFixed(4)}</span>
+        <span>+${Number(item.importance ?? 0).toFixed(4)}</span>
       </div>
-    `).join('') || '<p class="result-copy">No explanation data is available for this prediction.</p>';
+    `).join('') || '<p class="result-copy">No grouped permutation results are available.</p>';
     return true;
   } catch (error) {
-    wrapper.textContent = 'Input associations are temporarily unavailable. The prediction itself is unchanged.';
+    wrapper.textContent = 'Grouped permutation results are temporarily unavailable. The prediction itself is unchanged.';
     return false;
   }
 }
