@@ -27,8 +27,8 @@ from models.common import clean_data, create_current_features
 
 FRONTEND_DIR = ROOT / 'frontend'
 ARTIFACTS_DIR = ROOT / 'artifacts'
-FEATURE_IMPORTANCE_FILE = ROOT / 'feature_importance.csv'
-MODEL_METRICS_FILE = ARTIFACTS_DIR / 'model_metrics.json'
+FEATURE_IMPORTANCE_FILE = ARTIFACTS_DIR / 'evaluation' / 'feature_importance_seed_20261004.json'
+AUTHORITATIVE_METRICS_FILE = ARTIFACTS_DIR / 'evaluation' / 'final_metrics.json'
 
 
 app = FastAPI(title='Synthetic Tyre-Wear Benchmark', version='1.0.0')
@@ -223,12 +223,9 @@ def _build_legacy_feature_row(raw_inputs: dict[str, Any], feature_columns: list[
 
 
 def _safe_execute_prediction(model_name: str, frame: pd.DataFrame):
-    try:
-        artifact = load_model(model_name)
-    except ValueError:
-        available = list_available_models()
-        resolved = available[0] if available else 'xgboost'
-        artifact = load_model(resolved)
+    # Never silently change the model selected by the caller. Loader errors
+    # must remain visible so the UI cannot imply that a different model ran.
+    artifact = load_model(model_name)
     if not isinstance(artifact, dict):
         raise TypeError('Model artifact is not in the expected dictionary format.')
     model = artifact.get('model')
@@ -259,44 +256,64 @@ def get_models() -> dict[str, Any]:
 
 @app.get('/api/model-metrics')
 def get_model_metrics() -> dict[str, Any]:
-    if MODEL_METRICS_FILE.exists():
-        with MODEL_METRICS_FILE.open('r', encoding='utf-8') as handle:
-            payload = json.load(handle)
-        if isinstance(payload, dict):
-            return {'models': payload.get('models', payload.get('results', []))}
-        if isinstance(payload, list):
-            return {'models': payload}
-    return {'models': []}
+    """Serve the frozen, authoritative final-holdout results.
+
+    Legacy grouped-CV metrics are intentionally excluded from this endpoint.
+    The current artifact is explicitly a synthetic benchmark, not real-F1 validation.
+    """
+    if not AUTHORITATIVE_METRICS_FILE.exists():
+        return {'models': [], 'status': 'unavailable', 'dataset_type': 'unknown'}
+    with AUTHORITATIVE_METRICS_FILE.open('r', encoding='utf-8') as handle:
+        payload = json.load(handle)
+    models = payload.get('metrics', {}).get('models', [])
+    records = []
+    for item in models:
+        final = item.get('final_holdout')
+        if not isinstance(final, dict):
+            continue
+        records.append({
+            'model': item.get('model', 'unknown'),
+            'r2': float(final['r2']),
+            'mae': float(final['mae']),
+            'rmse': float(final['rmse']),
+            'metric_scope': 'final_holdout',
+            'dataset_type': payload.get('dataset', {}).get('type', 'unknown'),
+            'number_of_rows': int(final.get('number_of_rows', 0)),
+        })
+    return {
+        'models': records,
+        'status': payload.get('status', 'unknown'),
+        'dataset_type': payload.get('dataset', {}).get('type', 'unknown'),
+    }
 
 
 @app.get('/api/feature-importance')
 def get_feature_importance() -> dict[str, Any]:
+    """Serve grouped validation permutation importance; this is not SHAP."""
     if not FEATURE_IMPORTANCE_FILE.exists():
         return {
             'features': [],
             'method': 'unavailable',
-            'interpretation': 'No predictive feature-importance data is available.',
+            'metric': 'increase_in_mae',
+            'interpretation': 'No authoritative grouped-permutation importance is available.',
         }
-
-    with FEATURE_IMPORTANCE_FILE.open('r', encoding='utf-8', newline='') as handle:
-        reader = csv.DictReader(handle)
-        features = []
-        methods = set()
-        for row in reader:
-            method = row.get('method', '').strip()
-            if method:
-                methods.add(method)
-            record = {
-                'feature': row.get('feature', '').strip(),
-                'importance': float(row.get('importance', 0.0) or 0.0),
-            }
-            if record['feature']:
-                features.append(record)
+    with FEATURE_IMPORTANCE_FILE.open('r', encoding='utf-8') as handle:
+        payload = json.load(handle)
+    results = payload.get('results', [])
+    features = [{
+        'feature': row.get('feature_group', 'unknown'),
+        'importance': float(row.get('importance_mean', 0.0)),
+        'std': float(row.get('importance_std', 0.0)),
+        'features': row.get('features', []),
+        'metric': row.get('metric', 'increase_in_mae'),
+        'baseline_mae': float(row.get('baseline_mae', 0.0)),
+    } for row in results]
     return {
         'features': features[:30],
         'count': len(features),
-        'method': next(iter(methods)) if len(methods) == 1 else 'legacy_unspecified',
-        'interpretation': 'Global predictive association only; not causal importance or a local attribution.',
+        'method': payload.get('method', 'unknown'),
+        'metric': 'increase_in_mae',
+        'interpretation': 'Grouped validation permutation importance: the MAE increase after permuting a group. It measures predictive reliance in this synthetic benchmark, not causality or a local attribution.',
     }
 
 
