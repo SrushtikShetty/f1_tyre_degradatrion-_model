@@ -84,12 +84,14 @@ def test_explain_endpoint_does_not_claim_local_contributions_or_shap():
 
     assert response.status_code == 200, response.text
     payload = response.json()
-    assert payload['explanation_method'] == 'global_predictive_importance_association'
+    assert payload['explanation_method'] == 'grouped_permutation_validation'
     assert payload['importance_method'] == 'grouped_permutation_validation'
     assert payload['local_attribution_computed'] is False
-    assert 'feature_associations' in payload
+    assert 'feature_groups' in payload
+    assert 'feature_associations' not in payload
     assert 'feature_contributions' not in payload
-    assert 'causal effect' in payload['notes']
+    assert payload['shap_computed'] is False
+    assert 'causal effects' in payload['notes']
 
 
 def test_prediction_endpoint_uses_real_model_artifact():
