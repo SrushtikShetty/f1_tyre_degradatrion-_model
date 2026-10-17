@@ -1,12 +1,14 @@
 import json
 from pathlib import Path
 
+import pandas as pd
 import pytest
+from sklearn.linear_model import Ridge
 
 from f1_tyre.config import TARGET_NAME
 from f1_tyre.model_loader import list_available_models, load_corrected_model_registry, load_model
 from models.compare_models import build_grouped_cv_report
-from models.common import label_supplementary_grouped_cv
+from models.common import label_supplementary_grouped_cv, train_grouped_cv_model
 
 
 def test_model_registry_lists_supported_models():
@@ -81,3 +83,27 @@ def test_grouped_cv_report_declares_chronological_metrics_authoritative():
     assert report["metric_scope"] == "supplementary_grouped_cv"
     assert report["primary_metric_source"] == "artifacts/evaluation/final_metrics.json"
     assert report["models"][0]["model"] == "Ridge"
+
+
+def test_grouped_cv_trainer_preserves_artifact_and_model_metadata(monkeypatch):
+    features = pd.DataFrame({"lap": range(10), "tire_compound": ["HARD", "SOFT"] * 5})
+    target = pd.Series([value / 10 for value in range(10)])
+    groups = pd.Series([race for race in range(5) for _ in range(2)])
+    saved = []
+
+    monkeypatch.setattr(
+        "models.common.prepare_dataset",
+        lambda _: (features, target, groups, pd.DataFrame(), list(features.columns)),
+    )
+    monkeypatch.setattr("models.common.save_model_artifact", lambda *args: saved.append(args))
+
+    metrics = train_grouped_cv_model(
+        "ridge", "Ridge", Ridge(alpha=10.0), cv_jobs=1, scale=True, metadata={"device": "cpu"}
+    )
+    artifact = saved[0][1]
+    assert metrics["metric_scope"] == "supplementary_grouped_cv"
+    assert metrics["device"] == "cpu"
+    assert saved[0][0] == "ridge"
+    assert artifact["target"] == "next_lap_wear_increment"
+    assert artifact["metadata"] == {"model_name": "ridge", "device": "cpu"}
+    assert list(artifact["model"].named_steps) == ["prep", "scale", "model"]

@@ -3,7 +3,7 @@ import os
 
 import pandas as pd
 
-from .linear_regression import train as train_linear
+from .ridge import train as train_ridge
 from .random_forest import train as train_rf
 from .xgboost_model import train as train_xgb
 from .neural_network import train as train_nn
@@ -22,7 +22,7 @@ def build_grouped_cv_report(results):
 def run(data_dir='.', out_dir='artifacts'):
 	os.makedirs(out_dir, exist_ok=True)
 	results = [
-		train_linear(data_dir, out_dir),
+		train_ridge(data_dir, out_dir),
 		train_rf(data_dir, out_dir),
 		train_xgb(data_dir, out_dir),
 		train_nn(data_dir, out_dir),

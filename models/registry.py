@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from .linear_regression import train as train_ridge
 from .neural_network import train as train_nn
 from .random_forest import train as train_rf
+from .ridge import train as train_ridge
 from .xgboost_model import train as train_xgb
 
 
