@@ -82,7 +82,7 @@ The authoritative validation grouped-permutation results report increase in MAE 
 2. **Canonical explainability endpoint:** the API now exposes grouped permutation values from the authoritative report, including available variability fields. Its response says that these are validation-MAE increases, not local attributions or causal effects, and explicitly notes that SHAP was not computed.
 3. **Regression tests:** tests/test_api.py now checks final-holdout metric extraction, synthetic dataset scope, the grouped permutation method, and non-SHAP wording.
 4. **README accuracy:** the README now documents the corrected registry, Git LFS requirement, canonical evaluation path, CPU XGBoost configuration, and current synthetic-only scope.
-5. **IEEE manuscript:** research/paper.tex is the canonical editable source with embedded bibliography and editable TikZ/PGFPlots figures. The bibliography is embedded, so there is no separate refs.bib file in the canonical manuscript.
+5. **IEEE manuscript:** The companion deliverable paper.tex is the canonical editable source, with embedded bibliography and editable TikZ/PGFPlots figures. The source and compiled PDF are provided as files for this review; the manuscript was not committed into this branch. There is no separate refs.bib file required.
 6. **Audit report:** this document records source-to-paper status, metric provenance, known gaps, and validation outcomes.
 
 ## Reference verification register
