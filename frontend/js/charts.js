@@ -75,7 +75,7 @@ function renderImportanceChart(features) {
     data: {
       labels,
       datasets: [{
-        label: 'Predictive importance',
+        label: 'Validation MAE increase after group permutation',
         data: importances,
         backgroundColor: '#ed443b',
         borderRadius: 4,
@@ -87,11 +87,11 @@ function renderImportanceChart(features) {
       maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: (context) => `Importance ${context.parsed.x.toFixed(4)}` } },
+        tooltip: { callbacks: { label: (context) => `MAE increase ${context.parsed.x.toFixed(4)}` } },
       },
       scales: {
         x: {
-          title: { display: true, text: 'Predictive importance', color: '#a1afb5' },
+          title: { display: true, text: 'Increase in validation MAE', color: '#a1afb5' },
           ticks: { color: '#dfeaf1' },
           grid: { color: 'rgba(255,255,255,0.06)' },
         },
