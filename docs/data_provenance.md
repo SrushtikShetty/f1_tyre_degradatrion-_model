@@ -1,31 +1,47 @@
-# Dataset Provenance and Research Scope
+# Data Provenance and Target Lineage
 
-## Determination
+## Current authoritative benchmark
 
-The project dataset is a **constructed, synthetic-style F1 benchmark with unverified source provenance**. Git history contains the CSV additions, but no original data acquisition record or source-to-table generator that establishes the rows as real race telemetry. A telemetry-shaped schema, plausible circuit labels, season values, or driver/team names do not establish authenticity. It is not possible to separate potentially observed inputs from synthetic or manually constructed fields using the available provenance.
+The current training entry point is \`training/train_corrected_models.py\`; its default dataset is \`data/generated/authoritative_seed_20261004.csv\`. The generator lives in \`data_generation/generate_dataset.py\` and calls \`src/f1_tyre/synthetic_degradation.py::calculate_next_lap_degradation_pct\`.
 
-The wear column has stronger evidence: all 233,640 rows exactly match the constructed schedule `min(100, rate[compound] * (tire_age_laps - 1))` for HARD=1.0, MEDIUM=1.5, and SOFT=2.5. The next-lap wear increment is then derived from that schedule by shifting the wear column within race-driver rows. These labels are not documented as measured tyre degradation.
+The generator first samples synthetic current/end-of-lap states, including driver, team, circuit, tyre, fuel, traffic and weather-shaped fields. It then creates \`next_lap_degradation_pct\` from an explicit simulated response function. The target combines compound base rates with age, temperature, circuit load, pace, fuel, driving-intensity rating, traffic, race phase, and hidden per-stint tyre-sensitivity and surface-shock factors. Those factors and coefficients are benchmark assumptions; they are not estimated from F1 measurements. The exported authoritative label is \`next_lap_wear_increment\`, copied from this generated one-lap outcome by \`src/f1_tyre/data.py::build_target_frame\`; it is **not** built by shifting observed wear from a real race.
 
-## Field Provenance Register
+Saved authoritative artifact details in \`artifacts/evaluation/final_metrics.json\`:
+- Dataset type: \`synthetic\`.
+- Path: \`data/generated/authoritative_seed_20261004.csv\`.
+- Generator seed: \`20261004\`.
+- Raw race-state rows: 34,560; modeling rows after target eligibility: 33,840.
+- Races: 60.
+- Dataset SHA-256: \`c9121cdc3f5d00b7ba9e65c3af6bda27a038a9eb2ce6f241f0b94f6af483127a\`.
+- Chronological race partitions: train 36 races / 20,304 rows; validation 12 / 6,768; final holdout 12 / 6,768.
+- Preprocessing fit scope: train only; race, race-driver, stint, and duplicate-row partition-overlap checks are reported as passing.
 
-| Field family | Examples | Classification supported by repository evidence | Limitations |
-|---|---|---|---|
-| Row identifiers and chronology | `race_id`, `season`, `race_round`, `lap` | Supplied table fields; source unknown | Values do not verify an official event, calendar, or row collection process. |
-| Circuit metadata | `circuit_id`, country, length, turns, DRS zones | Supplied metadata-shaped fields; source unknown | No reference source or validation record is included. |
-| Driver and team metadata | names, nationality, `driver_*_rating`, `team_*_rating`, budget tier | Supplied fields; source unknown; ratings are constructed-looking but their generator is unavailable | No source, measurement method, date, or calibration is recorded. |
-| Qualifying and race state | grid, qualifying times, position, lap and sector times, gaps | Telemetry-shaped supplied fields; observed-vs-simulated origin cannot be verified | No sensor, timing feed, or race-data source is identified. |
-| Tyre and pit fields | compound, tyre age, pit-stop fields, `tire_wear_pct` | Compound/age provenance unknown; wear is demonstrably constructed from compound and age | Wear follows the exact capped compound-rate schedule described above. |
-| Weather and track state | air/track temperature, humidity, wind, grip, weather and track status | Supplied fields; source unknown | No measurement source, timestamp, interpolation, or forecast/observation distinction is documented. |
-| Model target | `next_lap_wear_increment` | Derived target, not an observed source column | Built as next-row wear minus current-row wear for rows passing consecutive-lap, age, and compound checks. The target inherits the deterministic wear schedule. |
-| Engineered model inputs | lags, rolling telemetry, ratios, sector sums, gaps and position transforms | Derived features | Availability and causality are evaluated separately in the feature audit; derived does not imply measured or physically validated. |
-| Predictions | model output columns in prediction artifacts | Model predictions | Predictions are not observations or ground truth. |
+The generated \`driver_aggression_rating\` is itself a synthetic driver-level draw. The target function uses this draw as one of several simulator factors. Consequently, results on this dataset cannot validate a real driver's driving style or establish a real-world relationship between aggression and tyre degradation. The saved target diagnostic reports a compound-age lookup \(R^2=0.78998\) on the final holdout, but this does not make the synthetic target physical.
 
-## Git and File Evidence
+## Legacy tables (separate from the authoritative run)
 
-`train.csv` appears in two original-history commits dated 2026-09-29, both titled `first commit`. Those commits add the CSV and legacy training/prediction files but do not contain an original data generator or provenance manifest. The current audit/re-evaluation scripts reconstruct and test the wear formula; they are not the source generator and must not be represented as such.
+The repository also contains \`train.csv\` and \`test.csv\`, which are older telemetry-shaped files. The repository does not establish the source or collection process for their rows. Their fields may resemble timing, telemetry, driver, team, circuit and weather variables, but schema resemblance alone is not provenance.
 
-## Research Scope
+A legacy audit reconstructed the following exact schedule across all 233,640 rows of the legacy \`train.csv\`:
+\`\`\`text
+tire_wear_pct = min(100, rate[compound] * (tire_age_laps - 1))
+rate[HARD] = 1.0; rate[MEDIUM] = 1.5; rate[SOFT] = 2.5
+\`\`\`
+The legacy \`next_lap_wear_increment\` target was derived by shifting \`tire_wear_pct\` to the next row within race-driver groups. In that dataset the target is determined exactly by compound and tyre age (including the schedule's cap behavior). The reported near-perfect lookup/tree scores on this target recover the constructed schedule, not measured tyre-degradation dynamics.
 
-The dataset is suitable for software, pipeline, and synthetic-rule experiments after its generation and target design become reproducible. It is **not currently suitable for claims about real-world Formula 1 tyre degradation, race strategy, or generalization to real races**. Metrics describe prediction of labels in this constructed table only.
+Do not mix legacy metrics with metrics from the authoritative simulator-generated dataset. Their row counts, target distributions, hashes and evaluation runs refer to different artefacts.
 
-Until field-level provenance is independently established, describe the inputs as **telemetry-shaped benchmark fields**, the wear labels as **constructed**, and the target as **derived**. Do not call the target measured tyre wear, describe predictive importance as physical causality, or imply that saved-model accuracy validates real racing performance.
+## Authentic telemetry status
+
+The current authoritative training run does not load FastF1 telemetry. The repository does not currently contain a successful, reproducible run demonstrating that the proposed driving-intensity model was fitted and evaluated on authenticated F1 data.
+
+The separate research protocol proposes obtaining completed race sessions from FastF1 and building a lap-level **relative pace-change proxy**. That outcome uses recorded lap times; it is not a direct rubber-wear measurement. A result from this path must name the events/seasons loaded, the row-retention counts, telemetry-channel coverage, the saved data hash and the race partitions before being represented as empirical evidence.
+
+## Documentation rule
+
+Use these terms consistently:
+- **Synthetic benchmark state** for rows generated by \`data_generation/generate_dataset.py\`.
+- **Synthetic target** for \`next_lap_degradation_pct\` / \`next_lap_wear_increment\` from the authoritative generator.
+- **Legacy target** for the compound-age schedule reconstructed in \`train.csv\`.
+- **FastF1 telemetry** only for rows actually downloaded and processed from a specified session using the FastF1 library.
+- **Relative pace-change proxy** for a lap-time-derived response. Never call it directly measured tyre wear without independent tyre-wear ground truth.
