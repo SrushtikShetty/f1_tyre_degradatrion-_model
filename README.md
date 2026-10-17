@@ -225,7 +225,7 @@ Potential extensions include:
 
 ## Research manuscript and scope
 
-The audited IEEE conference manuscript is in [`research/paper.tex`](research/paper.tex). It uses an embedded IEEE-style bibliography and editable TikZ/PGFPlots figures, so there is no separate `.bib` file to keep in sync. To compile it from a TeX Live installation with `IEEEtran`, TikZ, and PGFPlots available:
+The accompanying IEEE conference manuscript source and compiled PDF are provided as research deliverables alongside this branch review. The source uses an embedded IEEE-style bibliography and editable TikZ/PGFPlots figures, so no separate bibliography file is required. To compile the supplied paper.tex after placing it in a research directory on a TeX Live installation with IEEEtran, TikZ, and PGFPlots available:
 
 ```bash
 cd research
@@ -234,7 +234,7 @@ pdflatex -interaction=nonstopmode -halt-on-error paper.tex
 pdflatex -interaction=nonstopmode -halt-on-error paper.tex
 ```
 
-The paper reports only metrics in the authoritative synthetic benchmark report. It explicitly does not claim that driver aggression improves prediction on real F1 telemetry: no active FastF1 ingestion or SHAP run is present in the current pipeline. See [`docs/research_paper_alignment_audit.md`](docs/research_paper_alignment_audit.md) for claim statuses, implementation evidence, reference checks, and known gaps.
+The paper reports only metrics from the authoritative synthetic benchmark report. It does not claim driver aggression improves prediction on real F1 telemetry: active FastF1 ingestion and SHAP are not present in the current pipeline. See [docs/research_paper_alignment_audit.md](docs/research_paper_alignment_audit.md) for claim statuses, implementation evidence, reference checks, and known gaps.
 
 ## License
 
