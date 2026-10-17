@@ -1,5 +1,7 @@
 # Current Repository State Audit
 
+> **Historical snapshot:** This audit describes repository state on 2026-10-04 and is not a current-branch report. The default corrected training pipeline and model loader have changed since this snapshot. Use `docs/repository_paper_alignment_audit.md` for current source-to-paper alignment and the authoritative artifact paths.
+
 Date: 2026-10-04
 
 ## Scope
