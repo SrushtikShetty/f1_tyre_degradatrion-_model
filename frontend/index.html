@@ -26,7 +26,7 @@
             <a href="#overview">Dashboard</a>
             <a href="#prediction">Predict</a>
             <a href="#model-performance">Model insights</a>
-            <a href="#explainability">Feature importance</a>
+            <a href="#explainability">Grouped importance</a>
             <a href="#about">Methodology</a>
             <span class="system-status"><i aria-hidden="true"></i><span id="appStatusText">Checking model service</span></span>
           </div>
@@ -294,17 +294,17 @@
         <section id="explainability" class="container section-block">
           <div class="section-heading">
             <p class="label">Explainability</p>
-            <h2>Predictive feature importance</h2>
+            <h2>Grouped permutation importance</h2>
           </div>
 
           <div class="explain-grid">
             <div class="chart-card">
-              <h3>Global predictive importance</h3>
+              <h3>Grouped validation MAE increase</h3>
               <canvas id="importanceChart" aria-label="Global predictive feature importance chart"></canvas>
             </div>
             <div class="chart-card">
-              <h3>Input context</h3>
-              <p class="result-copy">Global importance describes model association, not a local contribution or causal effect. SHAP is not computed.</p>
+              <h3>Validation group effects</h3>
+              <p class="result-copy">Each value is the increase in validation MAE after a feature group is permuted. This is not a local contribution or causal effect. SHAP is not computed.</p>
               <div id="localExplanation" class="explanation-list"></div>
             </div>
           </div>

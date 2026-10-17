@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project is a modelling experiment on an F1-style, telemetry-shaped dataset whose source provenance is unverified. The checked-in wear labels are constructed from compound and tyre age, and the next-lap target is derived from those labels. The baseline therefore demonstrates recovery of a synthetic rule, not measured Formula 1 tyre-degradation dynamics. See [the provenance register](docs/data_provenance.md) and [the baseline audit](docs/baseline_audit.md).
+This project is a modelling experiment on an F1-style, telemetry-shaped dataset whose source provenance is unverified. The checked-in wear labels are constructed from compound and tyre age, and the next-lap target is derived from those labels. The active corrected trainer uses a second, explicitly generated synthetic race-state benchmark with an authored next-lap response function. Neither path is verified measured Formula 1 tyre wear, and the repository does not currently ingest FastF1 sessions in its active training pipeline. See [the provenance register](docs/data_provenance.md), [the baseline audit](docs/baseline_audit.md), and the [current research-paper alignment audit](docs/research_paper_alignment_audit.md).
 
 ## Problem
 
@@ -16,16 +16,7 @@ current_wear + predicted_increment
 
 ## Methodology
 
-The existing pipeline includes:
-
-- race-grouped causal ordering
-- lap-to-lap lag features
-- rolling historical telemetry windows
-- tyre-age and race-progress features
-- chronological validation and holdout splits
-- strict exclusion of future-state columns and end-of-race information
-
-These safeguards do not resolve the deterministic target: compound and age alone identify the next-lap target in the supplied table. Current model scores are not evidence of real-world performance.
+The codebase includes race-grouped causal ordering, registered feature allow-lists, target/future-state exclusion, lag and shifted-rolling feature helpers, tyre-age and race-progress transformations, chronological validation/holdout splitting, and leakage tests. Important scope detail: the authoritative corrected trainer selects registered current-state features and excludes registered lagged/rolling features from its current headline run. These safeguards do not make the synthetic response a measured target. The legacy table's response is deterministically recoverable from compound and age; the current corrected response is a separate authored simulator target. Neither provides real-world F1 accuracy evidence.
 
 ## Models
 
@@ -57,7 +48,7 @@ pip install -r requirements-dev.txt
 
 ## Using Existing Trained Models
 
-The project already includes trained model artifacts. Normal usage should load the saved model from `artifacts/models/` or the legacy artifact directory and perform inference without retraining.
+The corrected loader uses `artifacts/models/corrected/registry.json` and the corrected artifact paths declared there. It must not silently fall back to legacy model artefacts. Model `.joblib` files are stored with Git LFS, so install Git LFS and run `git lfs pull` after cloning if you need to load the model binaries.
 
 This is an explicit design rule:
 
@@ -182,11 +173,11 @@ This command explicitly trains or retrains the models and saves artifacts.
 
 ## Model Comparison
 
-Saved metrics are read from the artifact files and comparison outputs instead of retraining on each run. The project stores model metadata and metrics in the `artifacts/` tree and loads them during evaluation and reporting.
+Saved metrics are read from the artifact files and comparison outputs instead of retraining on each run. The authoritative evaluation is `artifacts/evaluation/final_metrics.json`; `artifacts/evaluation/final_report.json` mirrors its main results and limitations. The dashboard API has been aligned to read final-holdout model metrics and grouped permutation importance from that canonical report. Older root-level metric and feature-importance files are legacy artefacts and must not be presented as authoritative.
 
 ## GPU Support
 
-XGBoost checks for CUDA availability and uses GPU when available. If CUDA is not available, it automatically falls back to CPU and keeps the training/inference behaviour reproducible.
+The authoritative corrected benchmark configuration records XGBoost with `tree_method=hist` and `device=cpu`. Other hardware utilities and historical experiments may detect CUDA, but the published benchmark numbers in `artifacts/evaluation/final_metrics.json` were recorded using the CPU configuration.
 
 ## Evaluation Metrics
 
@@ -226,9 +217,24 @@ Potential extensions include:
 - temporal sequence models
 - strategy optimisation
 - pit-stop prediction
-- SHAP explainability
-- uncertainty estimation
-- driver/team adaptation
+- FastF1 ingestion and an independently defensible pace-degradation target
+- telemetry-derived driving-intensity features and raw-component ablations
+- SHAP explanations (not currently computed; current report uses grouped permutation importance)
+- race-cluster uncertainty intervals and leave-circuit-out evaluation
+- uncertainty estimation and driver/team adaptation
+
+## Research manuscript and scope
+
+The accompanying IEEE conference manuscript source and compiled PDF are provided as research deliverables alongside this branch review. The source uses an embedded IEEE-style bibliography and editable TikZ/PGFPlots figures, so no separate bibliography file is required. To compile the supplied paper.tex after placing it in a research directory on a TeX Live installation with IEEEtran, TikZ, and PGFPlots available:
+
+```bash
+cd research
+pdflatex -interaction=nonstopmode -halt-on-error paper.tex
+pdflatex -interaction=nonstopmode -halt-on-error paper.tex
+pdflatex -interaction=nonstopmode -halt-on-error paper.tex
+```
+
+The paper reports only metrics from the authoritative synthetic benchmark report. It does not claim driver aggression improves prediction on real F1 telemetry: active FastF1 ingestion and SHAP are not present in the current pipeline. See [docs/research_paper_alignment_audit.md](docs/research_paper_alignment_audit.md) for claim statuses, implementation evidence, reference checks, and known gaps.
 
 ## License
 

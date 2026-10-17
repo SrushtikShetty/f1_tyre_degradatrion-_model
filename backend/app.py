@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import csv
 import json
 import math
 import re
@@ -27,8 +26,7 @@ from models.common import clean_data, create_current_features
 
 FRONTEND_DIR = ROOT / 'frontend'
 ARTIFACTS_DIR = ROOT / 'artifacts'
-FEATURE_IMPORTANCE_FILE = ROOT / 'feature_importance.csv'
-MODEL_METRICS_FILE = ARTIFACTS_DIR / 'model_metrics.json'
+FINAL_METRICS_FILE = ARTIFACTS_DIR / 'evaluation' / 'final_metrics.json'
 
 
 app = FastAPI(title='Synthetic Tyre-Wear Benchmark', version='1.0.0')
@@ -259,49 +257,91 @@ def get_models() -> dict[str, Any]:
 
 @app.get('/api/model-metrics')
 def get_model_metrics() -> dict[str, Any]:
-    if MODEL_METRICS_FILE.exists():
-        with MODEL_METRICS_FILE.open('r', encoding='utf-8') as handle:
-            payload = json.load(handle)
-        if isinstance(payload, dict):
-            return {'models': payload.get('models', payload.get('results', []))}
-        if isinstance(payload, list):
-            return {'models': payload}
-    return {'models': []}
+    """Expose only the versioned authoritative final-holdout evaluation."""
+    if not FINAL_METRICS_FILE.exists():
+        return {
+            'models': [],
+            'status': 'UNAVAILABLE',
+            'metric_scope': 'final_holdout',
+            'dataset_type': 'unknown',
+        }
+
+    with FINAL_METRICS_FILE.open('r', encoding='utf-8') as handle:
+        payload = json.load(handle)
+
+    models = []
+    evaluation = payload.get('metrics', {})
+    for record in evaluation.get('models', []):
+        scores = record.get('final_holdout')
+        if not isinstance(scores, dict):
+            continue
+        models.append({
+            'model': record.get('model', 'unknown'),
+            'r2': scores.get('r2'),
+            'mae': scores.get('mae'),
+            'rmse': scores.get('rmse'),
+            'number_of_rows': scores.get('number_of_rows'),
+            'split': 'final_holdout',
+            'metric_scope': 'synthetic_final_holdout',
+        })
+
+    return {
+        'models': models,
+        'status': payload.get('status', 'UNKNOWN'),
+        'metric_scope': 'final_holdout',
+        'dataset_type': payload.get('dataset', {}).get('type', 'unknown'),
+        'target_definition': payload.get('target', {}).get('definition', ''),
+        'dataset_sha256': payload.get('dataset', {}).get('sha256', ''),
+    }
 
 
 @app.get('/api/feature-importance')
 def get_feature_importance() -> dict[str, Any]:
-    if not FEATURE_IMPORTANCE_FILE.exists():
+    """Serve documented grouped-permutation results from the canonical report."""
+    if not FINAL_METRICS_FILE.exists():
         return {
             'features': [],
             'method': 'unavailable',
-            'interpretation': 'No predictive feature-importance data is available.',
+            'metric': 'increase_in_mae',
+            'interpretation': 'No authoritative grouped-permutation report is available.',
         }
 
-    with FEATURE_IMPORTANCE_FILE.open('r', encoding='utf-8', newline='') as handle:
-        reader = csv.DictReader(handle)
-        features = []
-        methods = set()
-        for row in reader:
-            method = row.get('method', '').strip()
-            if method:
-                methods.add(method)
-            record = {
-                'feature': row.get('feature', '').strip(),
-                'importance': float(row.get('importance', 0.0) or 0.0),
-            }
-            if record['feature']:
-                features.append(record)
+    with FINAL_METRICS_FILE.open('r', encoding='utf-8') as handle:
+        payload = json.load(handle)
+
+    explanation = payload.get('explainability', {})
+    method = explanation.get('method', 'unavailable')
+    features = []
+    for item in explanation.get('results', []):
+        name = item.get('feature_group')
+        value = item.get('importance_mean')
+        if name is None or value is None:
+            continue
+        features.append({
+            'feature': name,
+            'importance': float(value),
+            'importance_std': float(item.get('importance_std', 0.0)),
+            'baseline_mae': float(item.get('baseline_mae', 0.0)),
+            'method': method,
+        })
+
     return {
-        'features': features[:30],
+        'features': features,
         'count': len(features),
-        'method': next(iter(methods)) if len(methods) == 1 else 'legacy_unspecified',
-        'interpretation': 'Global predictive association only; not causal importance or a local attribution.',
+        'method': method,
+        'metric': explanation.get('metric', 'increase_in_mae'),
+        'target_scope': payload.get('dataset', {}).get('type', 'unknown'),
+        'interpretation': (
+            'Grouped permutation importance is the increase in validation MAE after a feature group is permuted. '
+            'It describes predictive dependence in this synthetic benchmark, not a causal effect or a local attribution. '
+            'SHAP values are not computed.'
+        ),
     }
 
 
 @app.post('/api/explain')
 def explain_prediction(payload: PredictionRequest) -> dict[str, Any]:
+    """Return global grouped permutation results; do not imply local attribution."""
     model_name = payload.model.strip().lower()
     if model_name not in list_available_models():
         raise HTTPException(status_code=422, detail=f'Invalid model name: {payload.model}. Available models: {list_available_models()}')
@@ -309,29 +349,26 @@ def explain_prediction(payload: PredictionRequest) -> dict[str, Any]:
     artifact = load_model(model_name)
     feature_columns = artifact.get('feature_columns', [])
     try:
-        row = _build_legacy_feature_row(payload.inputs, feature_columns)
+        # Validate the submitted inputs against the model's expected input schema.
+        _build_legacy_feature_row(payload.inputs, feature_columns)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     importance_response = get_feature_importance()
-    feature_associations = [
-        {
-            'feature': feature['feature'],
-            'input_value': row.get(feature['feature']),
-            'predictive_importance': feature['importance'],
-        }
-        for feature in importance_response['features'][:10]
-    ]
-
     return {
         'model': model_name,
-        'explanation_method': 'global_predictive_importance_association',
-        'importance_method': importance_response['method'],
+        'explanation_method': importance_response.get('method', 'unavailable'),
+        'importance_method': importance_response.get('method', 'unavailable'),
+        'metric': importance_response.get('metric', 'increase_in_mae'),
+        'feature_groups': importance_response.get('features', [])[:10],
         'local_attribution_computed': False,
-        'feature_associations': feature_associations,
-        'notes': 'Global predictive importance is shown beside input values for context. It is not a local contribution or causal effect; no SHAP values are computed.',
+        'shap_computed': False,
+        'notes': (
+            'These are grouped permutation results calculated on validation data from the synthetic benchmark. '
+            'They quantify the increase in MAE after a feature group is permuted. They are not local prediction '
+            'contributions, causal effects, or SHAP values.'
+        ),
     }
-
 
 @app.post('/api/predict')
 def predict(payload: PredictionRequest) -> dict[str, Any]:
