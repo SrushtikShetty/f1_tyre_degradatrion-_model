@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 from .config import COMMON_GROUP_COLS, LEGACY_TARGET_NAME, MAIN_TARGET, TARGET_NAME

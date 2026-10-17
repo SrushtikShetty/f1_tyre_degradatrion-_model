@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from f1_tyre.model_loader import DEFAULT_MODEL_NAMES, list_available_models, load_model
+from f1_tyre.model_loader import list_available_models, load_model
 from models.common import clean_data, create_current_features
 
 

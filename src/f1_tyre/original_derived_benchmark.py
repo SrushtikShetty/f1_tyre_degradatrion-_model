@@ -64,8 +64,6 @@ def _build_semisynthetic_target(frame: pd.DataFrame, seed: int = 42) -> pd.Serie
     circuit_length = _as_float(frame.get("circuit_length_km"), default=5.0, index=frame.index)
     circuit_turns = _as_float(frame.get("circuit_turns"), default=18.0, index=frame.index)
     track_temp = _as_float(frame.get("race_track_temp_c"), default=35.0, index=frame.index)
-    air_temp = _as_float(frame.get("race_air_temp_c"), default=25.0, index=frame.index)
-    fuel_load = _as_float(frame.get("fuel_load_kg"), default=90.0, index=frame.index)
     aggress = _as_float(frame.get("driver_aggression_rating"), default=75.0, index=frame.index) / 100.0
     skills = _as_float(frame.get("driver_skill_rating"), default=80.0, index=frame.index) / 100.0
     consistency = _as_float(frame.get("driver_consistency_rating"), default=80.0, index=frame.index) / 100.0

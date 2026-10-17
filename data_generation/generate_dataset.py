@@ -116,8 +116,6 @@ def generate_race_states(config: Mapping[str, Any], seed: int | None = None) -> 
             compound = str(rng.choice(config["compounds"], p=compound_probabilities)).upper()
             grid_position = int(grid_by_driver[driver_id])
             skill = float(driver["driver_skill_rating"])
-            aggression = float(driver["driver_aggression_rating"])
-
             for lap in range(1, lap_count + 1):
                 progress = (lap - 1) / max(1, lap_count - 1)
                 track_temp = float(

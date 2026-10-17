@@ -46,7 +46,7 @@ def add_shifted_rolling(
     return out
 
 
-def add_engineered_features(df: pd.DataFrame) -> pd.DataFrame:
+def add_common_engineered_features(df: pd.DataFrame) -> pd.DataFrame:
     out = df.copy()
     if {"lap", "race_total_laps"}.issubset(out.columns):
         out["race_progress"] = out["lap"] / out["race_total_laps"].replace(0, np.nan)
@@ -54,7 +54,6 @@ def add_engineered_features(df: pd.DataFrame) -> pd.DataFrame:
         if "race_total_laps" in out.columns:
             denominator = out["race_total_laps"].replace(0, np.nan)
             out["tire_age_ratio"] = out["tire_age_laps"] / denominator
-        out["tire_age_squared"] = out["tire_age_laps"] ** 2
     if {"gap_ahead_sec", "gap_behind_sec"}.issubset(out.columns):
         out["total_nearest_gap"] = out["gap_ahead_sec"].abs() + out["gap_behind_sec"].abs()
     if {"grid_position", "position"}.issubset(out.columns):
@@ -63,6 +62,13 @@ def add_engineered_features(df: pd.DataFrame) -> pd.DataFrame:
         out["lap_time_per_km"] = out["lap_time_sec"] / out["circuit_length_km"].replace(0, np.nan)
     if {"s1_time_sec", "s2_time_sec", "s3_time_sec"}.issubset(out.columns):
         out["sector_total_sec"] = out[["s1_time_sec", "s2_time_sec", "s3_time_sec"]].sum(axis=1)
+    return out
+
+
+def add_engineered_features(df: pd.DataFrame) -> pd.DataFrame:
+    out = add_common_engineered_features(df)
+    if "tire_age_laps" in out.columns:
+        out["tire_age_squared"] = out["tire_age_laps"] ** 2
     return out
 
 
