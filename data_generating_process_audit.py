@@ -226,9 +226,7 @@ def main() -> None:
 
     train = partitions["train"]
     holdout = partitions["holdout"]
-    X_train = train[feature_columns]
     y_train = train[TARGET]
-    X_holdout = holdout[feature_columns]
     y_holdout = holdout[TARGET]
 
     target_values = target_frame[TARGET].astype(float)
@@ -446,10 +444,6 @@ def main() -> None:
     output_json = PROJECT_ROOT / "lookup_baseline_results.json"
     output_json.write_text(json.dumps(lookup_results, indent=2), encoding="utf-8")
 
-    distribution_table = pd.DataFrame(
-        [{"target_value": value, "count": int(count), "proportion": float(target_proportions.loc[value])}
-         for value, count in target_counts.items()]
-    )
     baseline_table = pd.DataFrame(
         [{"model": name, **values} for name, values in (
             ("Lookup", lookup_metrics),

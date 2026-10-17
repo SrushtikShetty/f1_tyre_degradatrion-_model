@@ -22,8 +22,7 @@ if str(ROOT) not in sys.path:
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from f1_tyre.model_loader import list_available_models, load_model, load_model_metrics
-from f1_tyre.inference.predict import predict_with_model
+from f1_tyre.model_loader import list_available_models, load_model
 from models.common import clean_data, create_current_features
 
 FRONTEND_DIR = ROOT / 'frontend'

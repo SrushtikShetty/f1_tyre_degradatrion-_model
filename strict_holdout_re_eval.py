@@ -114,7 +114,7 @@ def safe_feature_columns(df: pd.DataFrame) -> list[str]:
     return allowed
 
 
-def prepare_clean_dataset(path: Path) -> tuple[pd.DataFrame, pd.DataFrame, list[str], dict]:
+def prepare_clean_dataset(path: Path) -> tuple[pd.DataFrame, pd.DataFrame, list[str]]:
     raw = pd.read_csv(path)
     raw = ensure_causal_sort(drop_duplicate_race_laps(raw))
     target_df = build_legacy_target_frame(raw)
@@ -130,16 +130,7 @@ def prepare_clean_dataset(path: Path) -> tuple[pd.DataFrame, pd.DataFrame, list[
     combined["race_id"] = target_df["race_id"].reset_index(drop=True).to_numpy()
     combined["driver_id"] = target_df["driver_id"].reset_index(drop=True).to_numpy()
     combined["lap"] = target_df["lap"].reset_index(drop=True).to_numpy()
-    race_ids = sorted(int(r) for r in raw["race_id"].drop_duplicates().tolist())
-    split_info = {
-        "total_races": len(race_ids),
-        "total_rows": len(combined),
-        "target_mean": float(target_series.mean()),
-        "target_std": float(target_series.std(ddof=1)) if len(target_series) > 1 else 0.0,
-        "target_min": float(target_series.min()),
-        "target_max": float(target_series.max()),
-    }
-    return combined, target_df, feature_columns, split_info
+    return combined, target_df, feature_columns
 
 
 def evaluate_split(model_name: str, pipeline: Pipeline, X: pd.DataFrame, y: pd.Series) -> dict:
@@ -157,7 +148,7 @@ def evaluate_split(model_name: str, pipeline: Pipeline, X: pd.DataFrame, y: pd.S
 
 def compute_feature_importance(model_name: str, pipeline: Pipeline, X: pd.DataFrame, y: pd.Series) -> pd.DataFrame:
     preprocessor = pipeline.named_steps["preprocessor"]
-    transformed = preprocessor.fit_transform(X)
+    _ = preprocessor.fit_transform(X)
     feature_names = preprocessor.get_feature_names_out()
     model = pipeline.named_steps["model"]
 
@@ -199,7 +190,11 @@ def run_permutation_sanity_check(train_df: pd.DataFrame, val_df: pd.DataFrame, f
     }
 
 
-def feature_ablation_test(train_df: pd.DataFrame, val_df: pd.DataFrame, holdout_df: pd.DataFrame, feature_columns: list[str]) -> list[dict]:
+def feature_ablation_test(
+    train_df: pd.DataFrame,
+    holdout_df: pd.DataFrame,
+    feature_columns: list[str],
+) -> list[dict]:
     variants = {
         "A_strict_causal": feature_columns,
         "B_no_current_lap_telemetry": [c for c in feature_columns if c not in {"lap", "position", "lap_time_sec", "s1_time_sec", "s2_time_sec", "s3_time_sec", "sector_total_sec", "lap_time_per_km", "gap_to_leader_sec", "gap_ahead_sec", "gap_behind_sec", "total_nearest_gap", "track_status", "weather_current", "drs_activated"}],
@@ -211,7 +206,6 @@ def feature_ablation_test(train_df: pd.DataFrame, val_df: pd.DataFrame, holdout_
     for name, subset in variants.items():
         subset = [c for c in subset if c in feature_columns]
         X_train = train_df[subset]
-        X_val = val_df[subset]
         X_hold = holdout_df[subset]
         y_train = train_df[TARGET_NAME]
         y_hold = holdout_df[TARGET_NAME]
@@ -283,7 +277,7 @@ def main() -> None:
     assert set(train_races).isdisjoint(set(holdout_races))
     assert set(val_races).isdisjoint(set(holdout_races))
 
-    combined_df, _, feature_columns, split_meta = prepare_clean_dataset(train_path)
+    combined_df, _, feature_columns = prepare_clean_dataset(train_path)
 
     train_df = combined_df[combined_df["race_id"].isin(train_races)].copy()
     val_df = combined_df[combined_df["race_id"].isin(val_races)].copy()
@@ -362,7 +356,7 @@ def main() -> None:
 
     # Permutation sanity check and ablations.
     permutation_summary = run_permutation_sanity_check(train_df, val_df, feature_columns)
-    ablation_summary = feature_ablation_test(train_df, val_df, holdout_df, feature_columns)
+    ablation_summary = feature_ablation_test(train_df, holdout_df, feature_columns)
     leave_one_race_summary = leave_one_race_out_sanity_check(train_df, holdout_df, feature_columns, holdout_races, n_races=5)
 
     summary_df = pd.DataFrame(summaries)
