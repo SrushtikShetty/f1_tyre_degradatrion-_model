@@ -1,4 +1,5 @@
 import json
+import pytest
 
 from fastapi.testclient import TestClient
 
@@ -80,6 +81,20 @@ def test_explain_endpoint_does_not_claim_local_contributions_or_shap():
     assert 'feature_associations' in payload
     assert 'feature_contributions' not in payload
     assert 'causal effect' in payload['notes']
+
+
+def test_selected_model_load_error_does_not_fall_back_silently(monkeypatch):
+    def fail_selected_model(_model_name):
+        raise ValueError('artifact provenance mismatch')
+
+    def fail_if_fallback_is_attempted():
+        raise AssertionError('The API must not silently select a different model.')
+
+    monkeypatch.setattr(backend_app, 'load_model', fail_selected_model)
+    monkeypatch.setattr(backend_app, 'list_available_models', fail_if_fallback_is_attempted)
+
+    with pytest.raises(ValueError, match='artifact provenance mismatch'):
+        backend_app._safe_execute_prediction('xgboost', None)
 
 
 def test_prediction_endpoint_uses_real_model_artifact():
