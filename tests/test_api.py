@@ -31,21 +31,29 @@ def test_model_metrics_endpoint():
     assert len(payload['models']) >= 1
 
 
-def test_model_metrics_endpoint_reads_supplementary_report_envelope(monkeypatch, tmp_path):
-    metrics_path = tmp_path / 'model_metrics.json'
-    records = [{
-        'model': 'Ridge',
-        'r2': 0.8,
-        'metric_scope': 'supplementary_grouped_cv',
-        'primary_metric': False,
-    }]
-    metrics_path.write_text(json.dumps({'status': 'SUPPLEMENTARY_GROUPED_CV_ONLY', 'models': records}))
-    monkeypatch.setattr(backend_app, 'MODEL_METRICS_FILE', metrics_path)
+def test_model_metrics_endpoint_reads_authoritative_final_holdout(monkeypatch, tmp_path):
+    metrics_path = tmp_path / 'final_metrics.json'
+    metrics_path.write_text(json.dumps({
+        'status': 'FINAL_EVALUATION_COMPLETE',
+        'dataset': {'type': 'synthetic'},
+        'metrics': {'models': [{
+            'model': 'xgboost',
+            'validation': {'r2': 0.8, 'mae': 0.2, 'rmse': 0.3},
+            'final_holdout': {'r2': 0.75, 'mae': 0.25, 'rmse': 0.35, 'number_of_rows': 12},
+        }]}
+    }))
+    monkeypatch.setattr(backend_app, 'AUTHORITATIVE_METRICS_FILE', metrics_path)
 
     response = client.get('/api/model-metrics')
 
     assert response.status_code == 200
-    assert response.json()['models'] == records
+    body = response.json()
+    assert body['status'] == 'FINAL_EVALUATION_COMPLETE'
+    assert body['dataset_type'] == 'synthetic'
+    assert body['models'] == [{
+        'model': 'xgboost', 'r2': 0.75, 'mae': 0.25, 'rmse': 0.35,
+        'metric_scope': 'final_holdout', 'dataset_type': 'synthetic', 'number_of_rows': 12,
+    }]
 
 
 def test_feature_importance_endpoint():
@@ -54,7 +62,7 @@ def test_feature_importance_endpoint():
     payload = response.json()
     assert 'features' in payload
     assert len(payload['features']) >= 1
-    assert payload['method'] == 'legacy_unspecified'
+    assert payload['method'] == 'grouped_permutation_validation'
     assert 'not causal' in payload['interpretation']
 
 
@@ -67,7 +75,7 @@ def test_explain_endpoint_does_not_claim_local_contributions_or_shap():
     assert response.status_code == 200, response.text
     payload = response.json()
     assert payload['explanation_method'] == 'global_predictive_importance_association'
-    assert payload['importance_method'] == 'legacy_unspecified'
+    assert payload['importance_method'] == 'grouped_permutation_validation'
     assert payload['local_attribution_computed'] is False
     assert 'feature_associations' in payload
     assert 'feature_contributions' not in payload
